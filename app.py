@@ -1,5 +1,6 @@
 """StackTrack — peptide protocol tracker."""
 
+import base64
 import os
 import re
 import time
@@ -25,7 +26,7 @@ st.set_page_config(
 st.markdown("""
 <style>
 /* ════════════════════════════════════════════════════════════════════════════
-   StackTrack Design System — Inspired by Whoop & Levels CGM
+   StackTrack Design System — Modern SaaS Dark (Linear / Notion / Arc)
    ════════════════════════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
@@ -35,12 +36,18 @@ html, body, [class*="css"] {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
     -webkit-font-smoothing: antialiased !important;
 }
-.stApp { background: #0a0a0a !important; }
+.stApp { background: #09090b !important; }
 .block-container {
-    background: #0a0a0a !important;
+    background: #09090b !important;
     padding-top: 1.75rem !important;
     max-width: 1180px !important;
 }
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(139,92,246,0.6); }
 
 /* ── Hide Streamlit chrome ────────────────────────────────────────────────── */
 [data-testid="stDecoration"],
@@ -49,14 +56,11 @@ html, body, [class*="css"] {
 footer, footer + div,
 #MainMenu { display: none !important; }
 
-/* Make toolbar invisible but keep it in the DOM so the sidebar
-   expand/collapse button (a child of stToolbar) stays functional */
 [data-testid="stToolbar"] {
     background: transparent !important;
     box-shadow: none !important;
     border-bottom: none !important;
 }
-/* Hide toolbar action buttons (deploy, share, etc.) but not sidebar toggle */
 [data-testid="stToolbarActions"] { display: none !important; }
 
 /* ── Typography ───────────────────────────────────────────────────────────── */
@@ -67,27 +71,28 @@ h1 {
     color: #ffffff !important;
 }
 h2 {
-    font-size: 0.65rem !important;
+    font-size: 0.7rem !important;
     font-weight: 600 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.1em !important;
+    letter-spacing: 0.12em !important;
     color: rgba(255,255,255,0.3) !important;
     margin-top: 2rem !important;
 }
 h3 {
-    font-size: 0.72rem !important;
+    font-size: 0.7rem !important;
     font-weight: 600 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.08em !important;
+    letter-spacing: 0.12em !important;
     color: rgba(255,255,255,0.3) !important;
 }
+p { color: rgba(255,255,255,0.7) !important; }
 
 /* ── Metric cards ─────────────────────────────────────────────────────────── */
 [data-testid="metric-container"] {
-    background: rgba(167,139,250,0.06) !important;
-    border: 1px solid rgba(167,139,250,0.12) !important;
+    background: #111113 !important;
+    border: 1px solid rgba(255,255,255,0.06) !important;
     border-radius: 16px !important;
-    padding: 1.4rem 1.5rem !important;
+    padding: 20px 24px !important;
     position: relative !important;
     overflow: hidden !important;
 }
@@ -96,18 +101,18 @@ h3 {
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(167,139,250,0.4), transparent);
+    background: linear-gradient(90deg, transparent, rgba(139,92,246,0.35), transparent);
     pointer-events: none;
 }
 [data-testid="stMetricValue"] {
-    font-size: 3rem !important;
+    font-size: 2.5rem !important;
     font-weight: 800 !important;
     color: #ffffff !important;
     letter-spacing: -0.04em !important;
     line-height: 1 !important;
 }
 [data-testid="stMetricLabel"] {
-    font-size: 0.62rem !important;
+    font-size: 0.7rem !important;
     font-weight: 600 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.12em !important;
@@ -120,57 +125,89 @@ h3 {
     background: linear-gradient(135deg, #7c3aed, #a78bfa) !important;
     color: #ffffff !important;
     border: none !important;
-    border-radius: 10px !important;
-    font-weight: 700 !important;
-    font-size: 0.875rem !important;
-    letter-spacing: 0.005em !important;
-    transition: all 0.15s ease !important;
-    box-shadow: 0 2px 12px rgba(124,58,237,0.3) !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    letter-spacing: 0.01em !important;
+    min-height: 44px !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 12px rgba(124,58,237,0.25) !important;
 }
 [data-testid="stBaseButton-primary"] > button:hover,
 .stButton > button[kind="primary"]:hover {
     background: linear-gradient(135deg, #6d28d9, #7c3aed) !important;
-    box-shadow: 0 4px 24px rgba(124,58,237,0.5) !important;
+    box-shadow: 0 4px 24px rgba(124,58,237,0.45) !important;
     transform: translateY(-1px) !important;
+}
+
+/* ── CTA button (onboarding) ──────────────────────────────────────────────── */
+.cta-btn > button {
+    min-height: 52px !important;
+    font-size: 1rem !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 24px rgba(139,92,246,0.3) !important;
+}
+.cta-btn > button:hover {
+    box-shadow: 0 6px 32px rgba(139,92,246,0.5) !important;
 }
 
 /* ── Secondary button ─────────────────────────────────────────────────────── */
 .stButton > button:not([kind="primary"]),
 [data-testid="stBaseButton-secondary"] > button {
-    background: transparent !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    color: rgba(255,255,255,0.55) !important;
-    border-radius: 10px !important;
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    color: rgba(255,255,255,0.6) !important;
+    border-radius: 12px !important;
     font-weight: 500 !important;
     font-size: 0.875rem !important;
-    transition: all 0.15s ease !important;
+    min-height: 44px !important;
+    transition: all 0.2s ease !important;
 }
 .stButton > button:not([kind="primary"]):hover,
 [data-testid="stBaseButton-secondary"] > button:hover {
-    border-color: rgba(255,255,255,0.22) !important;
-    color: rgba(255,255,255,0.85) !important;
-    background: rgba(255,255,255,0.04) !important;
+    border-color: rgba(255,255,255,0.15) !important;
+    color: rgba(255,255,255,0.9) !important;
+    background: rgba(255,255,255,0.07) !important;
 }
 
 /* ── Destructive (Stop) button ────────────────────────────────────────────── */
 .destructive-btn button {
-    color: rgba(255,107,107,0.85) !important;
-    border-color: rgba(255,107,107,0.25) !important;
+    color: rgba(255,107,107,0.8) !important;
+    border-color: rgba(255,107,107,0.2) !important;
+    background: transparent !important;
+    min-height: 36px !important;
+    font-size: 0.78rem !important;
+    transition: all 0.2s ease !important;
 }
 .destructive-btn button:hover {
     color: rgb(255,107,107) !important;
-    border-color: rgba(255,107,107,0.5) !important;
+    border-color: rgba(255,107,107,0.45) !important;
     background: rgba(255,107,107,0.05) !important;
+}
+
+/* ── Danger zone button ───────────────────────────────────────────────────── */
+.danger-btn button {
+    color: rgba(239,68,68,0.7) !important;
+    border: 1px solid rgba(239,68,68,0.25) !important;
+    background: transparent !important;
+    border-radius: 12px !important;
+    font-size: 0.875rem !important;
+    min-height: 44px !important;
+    transition: all 0.2s ease !important;
+}
+.danger-btn button:hover {
+    color: rgba(239,68,68,0.95) !important;
+    border-color: rgba(239,68,68,0.5) !important;
+    background: rgba(239,68,68,0.06) !important;
 }
 
 /* ── Sidebar shell ────────────────────────────────────────────────────────── */
 [data-testid="stSidebar"] {
-    background: #050505 !important;
-    border-right: 1px solid rgba(255,255,255,0.05) !important;
+    background: #09090b !important;
+    border-right: 1px solid rgba(255,255,255,0.04) !important;
 }
 
 /* ── Sidebar collapse/expand toggle ──────────────────────────────────────── */
-/* Counteract any broad rule that could hide this wrapper */
 [data-testid="stSidebarCollapsedControl"] {
     display: block !important;
     visibility: visible !important;
@@ -178,7 +215,6 @@ h3 {
     pointer-events: auto !important;
     z-index: 999 !important;
 }
-/* Purple-tinted toggle button to match app theme */
 [data-testid="collapsedControl"] {
     display: flex !important;
     align-items: center !important;
@@ -186,32 +222,19 @@ h3 {
     visibility: visible !important;
     opacity: 1 !important;
     pointer-events: auto !important;
-    color: #A78BFA !important;
-    background: rgba(167,139,250,0.08) !important;
-    border: 1px solid rgba(167,139,250,0.2) !important;
+    color: #a78bfa !important;
+    background: rgba(139,92,246,0.08) !important;
+    border: 1px solid rgba(139,92,246,0.2) !important;
     border-radius: 8px !important;
-    transition: background 0.15s, border-color 0.15s !important;
+    transition: all 0.2s ease !important;
 }
 [data-testid="collapsedControl"]:hover {
-    background: rgba(167,139,250,0.15) !important;
-    border-color: rgba(167,139,250,0.35) !important;
+    background: rgba(139,92,246,0.15) !important;
+    border-color: rgba(139,92,246,0.35) !important;
 }
 [data-testid="collapsedControl"] svg {
-    fill: #A78BFA !important;
-    color: #A78BFA !important;
-}
-
-/* ── Sidebar logout button ────────────────────────────────────────────────── */
-[data-testid="stSidebar"] .stButton > button {
-    color: rgba(255,255,255,0.35) !important;
-    border-color: rgba(255,255,255,0.07) !important;
-    font-size: 0.8rem !important;
-    letter-spacing: 0.02em !important;
-}
-[data-testid="stSidebar"] .stButton > button:hover {
-    color: rgba(255,255,255,0.7) !important;
-    border-color: rgba(255,255,255,0.15) !important;
-    background: rgba(255,255,255,0.04) !important;
+    fill: #a78bfa !important;
+    color: #a78bfa !important;
 }
 
 /* ── Sidebar nav radio → menu items ──────────────────────────────────────── */
@@ -219,31 +242,31 @@ h3 {
 [data-testid="stSidebar"] .stRadio > div[role="radiogroup"] {
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 2px;
 }
 [data-testid="stSidebar"] .stRadio div[data-baseweb="radio"] {
-    padding: 8px 12px;
-    border-radius: 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: background 0.12s, border-color 0.12s;
+    transition: all 0.2s ease;
     border: 1px solid transparent;
 }
 [data-testid="stSidebar"] .stRadio div[data-baseweb="radio"]:hover {
-    background: rgba(255,255,255,0.03);
+    background: rgba(255,255,255,0.04);
 }
 [data-testid="stSidebar"] .stRadio div[data-baseweb="radio"] > div:first-child { display: none; }
 [data-testid="stSidebar"] .stRadio div[data-baseweb="radio"]
     [data-testid="stMarkdownContainer"] p {
-    color: rgba(255,255,255,0.38);
-    font-size: 0.875rem;
-    font-weight: 500;
+    color: rgba(255,255,255,0.5);
+    font-size: 0.9rem;
+    font-weight: 450;
     margin: 0;
 }
 [data-testid="stSidebar"] .stRadio div[data-baseweb="radio"][aria-checked="true"] {
-    background: rgba(124,58,237,0.08);
+    background: rgba(139,92,246,0.1);
     border: 1px solid transparent !important;
-    border-left: 3px solid #7c3aed !important;
-    padding-left: 9px;
+    border-left: 3px solid #8b5cf6 !important;
+    padding-left: 11px;
 }
 [data-testid="stSidebar"] .stRadio div[data-baseweb="radio"][aria-checked="true"]
     [data-testid="stMarkdownContainer"] p {
@@ -253,8 +276,8 @@ h3 {
 
 /* ── Streak pill ──────────────────────────────────────────────────────────── */
 .streak-pill {
-    background: rgba(167,139,250,0.04);
-    border: 1px solid rgba(167,139,250,0.12);
+    background: rgba(139,92,246,0.06);
+    border: 1px solid rgba(139,92,246,0.15);
     border-radius: 10px;
     padding: 10px 14px;
     margin: 8px 0 14px;
@@ -264,36 +287,27 @@ h3 {
 
 /* ── User badge ───────────────────────────────────────────────────────────── */
 .user-badge {
-    padding: 6px 10px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 8px;
+    padding: 8px 14px;
+    background: rgba(139,92,246,0.08);
+    border: 1px solid rgba(139,92,246,0.12);
+    border-radius: 10px;
     margin-bottom: 10px;
-    font-size: 0.75rem;
-    color: rgba(255,255,255,0.4);
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.55);
     display: block;
 }
 
 /* ── Cards / containers ───────────────────────────────────────────────────── */
 [data-testid="stVerticalBlockBorderWrapper"] {
-    background: #111111 !important;
+    background: #111113 !important;
     border: 1px solid rgba(255,255,255,0.06) !important;
-    border-radius: 14px !important;
+    border-radius: 16px !important;
 }
 [data-testid="stForm"] {
-    background: #111111 !important;
+    background: #111113 !important;
     border: 1px solid rgba(255,255,255,0.06) !important;
-    border-radius: 14px !important;
-    padding: 1.25rem 1.5rem !important;
-}
-
-/* ── Onboarding cards ─────────────────────────────────────────────────────── */
-.onboard-step {
-    background: #111111;
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 14px;
-    padding: 1.25rem;
-    height: 100%;
+    border-radius: 16px !important;
+    padding: 1.5rem !important;
 }
 
 /* ── Inputs ───────────────────────────────────────────────────────────────── */
@@ -302,50 +316,52 @@ h3 {
 .stNumberInput > div > div > input,
 [data-testid="stTextInput"] input,
 [data-testid="stNumberInput"] input {
-    background: #0f0f0f !important;
-    border: 1px solid rgba(255,255,255,0.09) !important;
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
     border-radius: 10px !important;
     color: rgba(255,255,255,0.9) !important;
+    transition: all 0.2s ease !important;
 }
 .stTextInput > div > div > input:focus,
 [data-testid="stTextInput"] input:focus,
 [data-testid="stNumberInput"] input:focus {
-    border-color: #7c3aed !important;
-    box-shadow: 0 0 0 2px rgba(124,58,237,0.18) !important;
+    border-color: #8b5cf6 !important;
+    box-shadow: 0 0 0 3px rgba(139,92,246,0.15) !important;
 }
 [data-testid="stSelectbox"] > div > div {
-    background: #0f0f0f !important;
-    border-color: rgba(255,255,255,0.09) !important;
+    background: rgba(255,255,255,0.04) !important;
+    border-color: rgba(255,255,255,0.08) !important;
     border-radius: 10px !important;
 }
 
 /* ── Tabs ─────────────────────────────────────────────────────────────────── */
 .stTabs [data-baseweb="tab-list"] {
     background: transparent;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
     gap: 0;
 }
 .stTabs [data-baseweb="tab"] {
-    color: rgba(255,255,255,0.3) !important;
+    color: rgba(255,255,255,0.35) !important;
     font-size: 0.72rem !important;
     font-weight: 600 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.08em !important;
-    padding: 0.6rem 1rem !important;
-    transition: color 0.15s !important;
+    padding: 0.65rem 1.1rem !important;
+    transition: color 0.2s ease !important;
 }
 .stTabs [aria-selected="true"] {
     color: #a78bfa !important;
-    border-bottom-color: #7c3aed !important;
+    border-bottom-color: #8b5cf6 !important;
 }
-.stTabs [data-baseweb="tab"]:hover { color: rgba(255,255,255,0.6) !important; }
+.stTabs [data-baseweb="tab"]:hover { color: rgba(255,255,255,0.65) !important; }
 
-/* ── Alerts ───────────────────────────────────────────────────────────────── */
+/* ── Alerts — dark bg + colored left border only ──────────────────────────── */
 [data-testid="stAlert"] {
-    background: rgba(167,139,250,0.08) !important;
-    border: 1px solid rgba(167,139,250,0.12) !important;
-    border-left: 3px solid #7c3aed !important;
-    border-radius: 10px !important;
+    background: rgba(139,92,246,0.06) !important;
+    border: 1px solid rgba(139,92,246,0.1) !important;
+    border-left: 3px solid #8b5cf6 !important;
+    border-radius: 12px !important;
+    color: rgba(255,255,255,0.7) !important;
 }
 
 /* ── Slider ───────────────────────────────────────────────────────────────── */
@@ -353,34 +369,21 @@ h3 {
     color: #a78bfa;
 }
 [data-testid="stSlider"] [role="slider"] {
-    background: #7c3aed !important;
-    border-color: #7c3aed !important;
+    background: #8b5cf6 !important;
+    border-color: #8b5cf6 !important;
 }
 
 /* ── Caption ──────────────────────────────────────────────────────────────── */
 .stCaption, [data-testid="stCaptionContainer"] p {
-    color: rgba(255,255,255,0.3) !important;
-    font-size: 0.72rem !important;
-}
-
-/* ── Danger zone (delete account) button ─────────────────────────────────── */
-.danger-btn button {
-    color: rgba(255,107,107,0.5) !important;
-    border-color: transparent !important;
-    font-size: 0.78rem !important;
-    background: transparent !important;
-    min-height: 30px !important;
-}
-.danger-btn button:hover {
-    color: rgba(255,107,107,0.85) !important;
-    background: rgba(255,107,107,0.05) !important;
+    color: rgba(255,255,255,0.35) !important;
+    font-size: 0.75rem !important;
 }
 
 /* ── Danger zone section wrapper ─────────────────────────────────────────── */
 .danger-zone-wrapper {
-    border: 1px solid rgba(255,80,80,0.2);
-    border-radius: 14px;
-    padding: 1.25rem 1.5rem;
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 16px;
+    padding: 1.5rem;
     margin-top: 0.5rem;
 }
 
@@ -388,64 +391,54 @@ h3 {
 .privacy-link > button {
     background: none !important;
     border: none !important;
-    color: rgba(255,255,255,0.25) !important;
-    font-size: 0.7rem !important;
+    color: rgba(255,255,255,0.2) !important;
+    font-size: 0.65rem !important;
     padding: 2px 8px !important;
     box-shadow: none !important;
     min-height: unset !important;
     height: auto !important;
-    text-decoration: underline !important;
-    text-decoration-color: rgba(255,255,255,0.15) !important;
-    letter-spacing: 0.01em !important;
+    letter-spacing: 0.03em !important;
 }
 .privacy-link > button:hover {
-    color: rgba(255,255,255,0.5) !important;
+    color: rgba(255,255,255,0.45) !important;
     background: none !important;
     border: none !important;
     box-shadow: none !important;
 }
 
 /* ── Divider ──────────────────────────────────────────────────────────────── */
-hr { border-color: rgba(255,255,255,0.05) !important; }
+hr { border-color: rgba(255,255,255,0.04) !important; }
+
+/* ── Dataframe ────────────────────────────────────────────────────────────── */
+[data-testid="stDataFrame"] {
+    border-radius: 12px !important;
+    overflow: hidden !important;
+}
 
 /* ── Mobile ───────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-    /* Sidebar: full-width overlay when open */
     [data-testid="stSidebar"] {
         width: 100vw !important;
         min-width: 100vw !important;
     }
-
-    /* Content edges */
     .block-container { padding: 0 1rem !important; }
-
-    /* Tap targets */
     .stButton > button,
     [data-testid="stBaseButton-primary"] > button,
     [data-testid="stBaseButton-secondary"] > button {
-        min-height: 44px !important;
+        min-height: 48px !important;
     }
-
-    /* Stack columns vertically */
     .stHorizontalBlock { flex-direction: column !important; }
     .stHorizontalBlock > [data-testid="column"] {
         width: 100% !important;
         min-width: 100% !important;
         flex: 1 1 100% !important;
     }
-
-    /* Hero font sizes */
     h1 { font-size: 1.5rem !important; }
-    p  { font-size: 0.85rem !important; }
-
-    /* Full-width pills and cards */
     .streak-pill,
     [data-testid="stVerticalBlockBorderWrapper"] {
         width: 100% !important;
         box-sizing: border-box !important;
     }
-
-    /* Sidebar toggle — keep visible and tap-friendly on mobile */
     [data-testid="stSidebarCollapsedControl"] {
         display: block !important;
         visibility: visible !important;
@@ -498,6 +491,37 @@ def svc() -> Client | None:
 def _clear_session():
     for k in ("user", "access_token", "refresh_token", "cached_username"):
         st.session_state.pop(k, None)
+    try:
+        st.query_params.pop("s", None)
+    except Exception:
+        pass
+
+
+def _store_session(refresh_token: str) -> None:
+    """Persist refresh token in URL query params so page reload doesn't log out."""
+    st.query_params["s"] = base64.b64encode(refresh_token.encode()).decode()
+
+
+def _try_restore_session() -> bool:
+    """On page reload, restore Supabase session from the stored refresh token."""
+    encoded = st.query_params.get("s")
+    if not encoded:
+        return False
+    try:
+        refresh_token = base64.b64decode(encoded.encode()).decode()
+        res = _base_client().auth.refresh_session(refresh_token)
+        if res.session and res.user:
+            st.session_state["user"]          = {"id": res.user.id, "email": res.user.email}
+            st.session_state["access_token"]  = res.session.access_token
+            st.session_state["refresh_token"] = res.session.refresh_token
+            _store_session(res.session.refresh_token)
+            return True
+    except Exception:
+        try:
+            st.query_params.pop("s", None)
+        except Exception:
+            pass
+    return False
 
 
 def get_username() -> str | None:
@@ -692,7 +716,7 @@ _BASE_LAYOUT = dict(
         tickfont=dict(color="#444444", size=10),
     ),
     hoverlabel=dict(
-        bgcolor="#111111",
+        bgcolor="#111113",
         bordercolor="#222222",
         font=dict(color="#ffffff", size=12),
     ),
@@ -733,12 +757,13 @@ def _apply_trend_xaxis(fig: go.Figure, df: pd.DataFrame) -> go.Figure:
 # ─── Auth page ────────────────────────────────────────────────────────────────
 
 def page_auth():
-    # Override container border with purple accent for this page only
     st.markdown("""
     <style>
     [data-testid="stVerticalBlockBorderWrapper"] {
-        border-color: rgba(167,139,250,0.18) !important;
-        background: #0D0D13 !important;
+        border-color: rgba(139,92,246,0.15) !important;
+        background: #111113 !important;
+        border-radius: 20px !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.35) !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -748,35 +773,40 @@ def page_auth():
     <div style="text-align:center;padding:3.5rem 0 2rem">
         <div style="font-size:3rem;margin-bottom:1rem">⚗️</div>
         <div style="
-            font-size:2rem;font-weight:800;letter-spacing:-0.04em;
-            color:#A78BFA;margin-bottom:12px;line-height:1
+            font-size:2.4rem;font-weight:800;letter-spacing:-0.04em;
+            background: linear-gradient(135deg, #ffffff 30%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom:14px;line-height:1
         ">StackTrack</div>
         <p style="
-            color:rgba(255,255,255,0.35);font-size:0.9rem;
-            max-width:320px;margin:0 auto;line-height:1.7;font-weight:400
+            color:rgba(255,255,255,0.45)!important;font-size:1.05rem;
+            max-width:320px;margin:0 auto 2.5rem;line-height:1.6;font-weight:400
         ">Track your peptide protocols.<br>See what actually works.</p>
     </div>
     """, unsafe_allow_html=True)
 
     # ── Value props ───────────────────────────────────────────────────────────
-    _, c1, c2, c3, _ = st.columns([0.75, 1, 1, 1, 0.75])
-    for col, icon, label in [
-        (c1, "📈", "Track outcomes"),
-        (c2, "🔬", "Compare compounds"),
-        (c3, "👥", "Community data"),
+    _, c1, c2, c3, _ = st.columns([0.5, 1, 1, 1, 0.5])
+    for col, icon, label, desc in [
+        (c1, "📈", "Track outcomes",    "Log 5 metrics daily and see your trends over time."),
+        (c2, "🔬", "Compare compounds", "Run multiple protocols and compare what works."),
+        (c3, "👥", "Community data",    "Anonymous benchmarks from the StackTrack community."),
     ]:
         with col:
             st.markdown(
                 f"<div style='"
-                f"text-align:center;padding:14px 10px;"
-                f"background:rgba(167,139,250,0.04);"
-                f"border:1px solid rgba(167,139,250,0.12);"
-                f"border-radius:12px;"
+                f"text-align:center;padding:20px 14px;"
+                f"background:rgba(17,17,19,0.85);"
+                f"backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);"
+                f"border:1px solid rgba(255,255,255,0.07);"
+                f"border-radius:16px;min-height:100px;"
                 f"'>"
-                f"<div style='font-size:1.35rem;margin-bottom:6px'>{icon}</div>"
-                f"<div style='font-size:0.72rem;font-weight:600;"
-                f"color:rgba(255,255,255,0.4);text-transform:uppercase;"
-                f"letter-spacing:0.07em'>{label}</div>"
+                f"<div style='font-size:2rem;margin-bottom:10px'>{icon}</div>"
+                f"<div style='font-size:0.8rem;font-weight:600;text-transform:uppercase;"
+                f"letter-spacing:0.07em;color:rgba(255,255,255,0.5);margin-bottom:6px'>{label}</div>"
+                f"<div style='font-size:0.75rem;color:rgba(255,255,255,0.3);line-height:1.4'>{desc}</div>"
                 f"</div>",
                 unsafe_allow_html=True,
             )
@@ -801,6 +831,7 @@ def page_auth():
                             st.session_state["user"]          = {"id": res.user.id, "email": res.user.email}
                             st.session_state["access_token"]  = res.session.access_token
                             st.session_state["refresh_token"] = res.session.refresh_token
+                            _store_session(res.session.refresh_token)
                             st.rerun()
                         except Exception:
                             st.error("Invalid email or password. Please try again.")
@@ -825,7 +856,6 @@ def page_auth():
                         else:
                             try:
                                 res = db().auth.sign_up({"email": email, "password": pw1})
-                                # Set tokens before calling db() for the profile insert
                                 st.session_state["access_token"]  = res.session.access_token
                                 st.session_state["refresh_token"] = res.session.refresh_token
                                 profile_client = svc() or db()
@@ -835,14 +865,15 @@ def page_auth():
                                 }).execute()
                                 st.session_state["user"]            = {"id": res.user.id, "email": res.user.email}
                                 st.session_state["cached_username"] = username
+                                _store_session(res.session.refresh_token)
                                 st.rerun()
                             except Exception as e:
                                 st.error(str(e))
 
     # ── Footer ────────────────────────────────────────────────────────────────
     st.markdown(
-        "<p style='text-align:center;color:rgba(255,255,255,0.18);font-size:0.75rem;"
-        "margin-top:2.5rem;letter-spacing:0.02em'>"
+        "<p style='text-align:center;color:rgba(255,255,255,0.18)!important;"
+        "font-size:0.72rem;margin-top:2.5rem;letter-spacing:0.02em'>"
         "Built for biohackers. Your data is private.</p>",
         unsafe_allow_html=True,
     )
@@ -852,11 +883,11 @@ def page_auth():
 
 def page_onboarding():
     st.markdown(
-        "<div style='max-width:680px;margin:3rem auto 0;text-align:center;padding:0 1rem'>"
+        "<div style='max-width:720px;margin:3rem auto 0;text-align:center;padding:0 1rem'>"
         "<div style='font-size:3.5rem;margin-bottom:1.25rem'>⚗️</div>"
-        "<div style='font-size:2rem;font-weight:800;letter-spacing:-0.03em;"
+        "<div style='font-size:2.2rem;font-weight:700;letter-spacing:-0.03em;"
         "color:#ffffff;margin:0 0 0.75rem;line-height:1.1'>Welcome to StackTrack</div>"
-        "<div style='color:rgba(255,255,255,0.5);font-size:1rem;margin:0 0 2.5rem;line-height:1.6'>"
+        "<div style='color:rgba(255,255,255,0.45);font-size:1rem;margin:0 0 2.5rem;line-height:1.6'>"
         "Track your protocols. See what works.</div>"
         "</div>",
         unsafe_allow_html=True,
@@ -870,21 +901,31 @@ def page_onboarding():
     ]:
         with col:
             st.markdown(
-                f"<div style='background:#161622;border:1px solid rgba(255,255,255,0.08);"
-                f"border-radius:12px;padding:20px;text-align:center;box-sizing:border-box'>"
-                f"<div style='font-size:1.5rem;margin-bottom:10px'>{icon}</div>"
-                f"<div style='font-weight:700;color:#ffffff;font-size:0.875rem;margin-bottom:6px'>{title}</div>"
-                f"<div style='color:rgba(255,255,255,0.4);font-size:0.78rem;line-height:1.5'>{desc}</div>"
+                f"<div style='background:rgba(17,17,19,0.9);"
+                f"backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);"
+                f"border:1px solid rgba(255,255,255,0.07);border-radius:16px;"
+                f"padding:24px 16px;text-align:center;min-height:140px;"
+                f"box-sizing:border-box'>"
+                f"<div style='font-size:2.2rem;margin-bottom:12px'>{icon}</div>"
+                f"<div style='font-weight:700;color:#ffffff;font-size:0.9rem;margin-bottom:8px'>{title}</div>"
+                f"<div style='color:rgba(255,255,255,0.38);font-size:0.78rem;line-height:1.5'>{desc}</div>"
                 f"</div>",
                 unsafe_allow_html=True,
             )
 
-    st.markdown("<div style='height:2rem'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:2.5rem'></div>", unsafe_allow_html=True)
     _, btn_col, _ = st.columns([1, 1.2, 1])
     with btn_col:
+        st.markdown('<div class="cta-btn">', unsafe_allow_html=True)
         if st.button("Add your first protocol →", type="primary", use_container_width=True):
             st.session_state["nav_page"] = "🧪 My Protocols"
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown(
+        "<div style='text-align:center;color:rgba(255,255,255,0.22);font-size:0.72rem;margin-top:10px'>"
+        "Takes 30 seconds</div>",
+        unsafe_allow_html=True,
+    )
 
 
 # ─── Stop-and-Reflect helper ──────────────────────────────────────────────────
@@ -902,7 +943,7 @@ def _render_stop_reflect(protocol: dict, button_key: str):
     if st.session_state.get(confirm_key, False):
         st.markdown(
             "<div style='margin-top:12px;padding:14px;background:rgba(255,255,255,0.03);"
-            "border:1px solid rgba(255,255,255,0.08);border-radius:10px'>",
+            "border:1px solid rgba(255,255,255,0.07);border-radius:12px'>",
             unsafe_allow_html=True,
         )
         st.markdown("**Stop & reflect**")
@@ -935,8 +976,8 @@ def _render_stop_reflect(protocol: dict, button_key: str):
 
 def _dash_section(title: str):
     st.markdown(
-        f"<div style='font-size:0.75rem;font-weight:600;text-transform:uppercase;"
-        f"letter-spacing:0.1em;color:rgba(255,255,255,0.35);margin:24px 0 12px'>{title}</div>",
+        f"<div style='font-size:0.7rem;font-weight:600;text-transform:uppercase;"
+        f"letter-spacing:0.12em;color:rgba(255,255,255,0.3);margin:32px 0 16px'>{title}</div>",
         unsafe_allow_html=True,
     )
 
@@ -964,24 +1005,32 @@ def page_dashboard():
     else:
         for p in protocols:
             st.markdown(
-                "<div style='border-left:3px solid #7c3aed;background:#0f0f17;"
-                "border-radius:0 12px 12px 0;margin-bottom:10px;padding:2px 0'>",
+                "<div style='border-left:3px solid #8b5cf6;background:#111113;"
+                "border-radius:0 16px 16px 0;margin-bottom:12px;padding:16px 20px'>",
                 unsafe_allow_html=True,
             )
-            with st.container():
-                lc, rc = st.columns([4, 1])
-                with lc:
-                    st.markdown(f"**{p['compound']}**")
-                    detail = f"{p['dose_amount']} {p['dose_unit']} · {p['frequency']}"
-                    if p.get("timing"):
-                        detail += f" · {p['timing']}"
-                    if p.get("source"):
-                        detail += f"  |  Source: {p['source']}"
-                    st.caption(detail)
-                with rc:
-                    days_on = (date.today() - datetime.strptime(p["started_at"], "%Y-%m-%d").date()).days
-                    st.caption(f"Day {days_on + 1}")
-                    _render_stop_reflect(p, button_key=f"dash_stop_{p['id']}")
+            lc, rc = st.columns([5, 1])
+            with lc:
+                st.markdown(
+                    f"<div style='font-size:1.1rem;font-weight:700;color:#ffffff;margin-bottom:6px'>"
+                    f"{p['compound']}</div>"
+                    f"<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap'>"
+                    f"<span style='background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.2);"
+                    f"border-radius:6px;padding:2px 8px;font-size:0.75rem;color:rgba(255,255,255,0.6)'>"
+                    f"{p['dose_amount']} {p['dose_unit']}</span>"
+                    f"<span style='font-size:0.78rem;color:rgba(255,255,255,0.35)'>{p['frequency']}"
+                    f"{' · ' + p['timing'] if p.get('timing') else ''}</span>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+            with rc:
+                days_on = (date.today() - datetime.strptime(p["started_at"], "%Y-%m-%d").date()).days
+                st.markdown(
+                    f"<div style='text-align:right;color:rgba(255,255,255,0.3);font-size:0.75rem;"
+                    f"margin-bottom:8px'>Day {days_on + 1}</div>",
+                    unsafe_allow_html=True,
+                )
+                _render_stop_reflect(p, button_key=f"dash_stop_{p['id']}")
             st.markdown("</div>", unsafe_allow_html=True)
 
     if all_logs:
@@ -1094,9 +1143,9 @@ def page_daily_log():
         log_word = "log" if logs_this_protocol == 1 else "logs"
         st.markdown(f"""
         <div style="
-            background: rgba(167,139,250,0.06);
-            border: 1px solid rgba(167,139,250,0.14);
-            border-radius: 10px;
+            background: rgba(139,92,246,0.06);
+            border: 1px solid rgba(139,92,246,0.14);
+            border-radius: 12px;
             padding: 12px 16px;
             margin-bottom: 16px;
             font-size: 0.875rem;
@@ -1389,7 +1438,7 @@ def page_my_protocols():
                             y=df[metric],
                             mode="lines+markers",
                             line=dict(color=color, width=2.5, shape="spline", smoothing=0.8),
-                            marker=dict(size=6, color=color, line=dict(color="#0a0a0a", width=1.5)),
+                            marker=dict(size=6, color=color, line=dict(color="#09090b", width=1.5)),
                             fill="tozeroy",
                             fillcolor=f"rgba({r},{g},{b},0.07)",
                             hovertemplate=f"<b>{metric.capitalize()}</b>: %{{y}}<br>%{{x|%b %d}}<extra></extra>",
@@ -1710,8 +1759,8 @@ def page_community_insights():
         st.markdown("""
         <div style="
             background: rgba(255,255,255,0.02);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 16px;
             padding: 32px 24px;
             text-align: center;
             margin: 8px 0;
@@ -1759,8 +1808,8 @@ def page_community_insights():
         st.markdown("""
         <div style="
             background: rgba(255,255,255,0.02);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 16px;
             padding: 32px 24px;
             text-align: center;
             margin: 8px 0;
@@ -1877,7 +1926,7 @@ def page_privacy_policy():
 
     st.markdown("### Your rights")
     st.markdown(
-        "- **Delete your account** at any time from the sidebar — this permanently removes your account "
+        "- **Delete your account** at any time from Settings — this permanently removes your account "
         "and all associated protocols, logs, and profile data\n"
         "- Deletion is immediate and irreversible. We do not retain backups of deleted accounts\n"
         "- You may request a copy of your data by contacting us"
@@ -1892,8 +1941,8 @@ def page_privacy_policy():
 
 def _settings_section(title: str):
     st.markdown(
-        f"<div style='font-size:0.75rem;font-weight:600;text-transform:uppercase;"
-        f"letter-spacing:0.1em;color:rgba(255,255,255,0.35);margin:0 0 12px'>{title}</div>",
+        f"<div style='font-size:0.7rem;font-weight:600;text-transform:uppercase;"
+        f"letter-spacing:0.12em;color:rgba(255,255,255,0.3);margin:0 0 16px'>{title}</div>",
         unsafe_allow_html=True,
     )
 
@@ -1965,8 +2014,8 @@ def page_settings():
     # ── Danger zone ───────────────────────────────────────────────────────────
     st.markdown('<div class="danger-zone-wrapper">', unsafe_allow_html=True)
     st.markdown(
-        "<div style='font-size:0.75rem;font-weight:600;text-transform:uppercase;"
-        "letter-spacing:0.1em;color:rgba(255,107,107,0.6);margin-bottom:0.75rem'>Danger Zone</div>",
+        "<div style='font-size:0.7rem;font-weight:600;text-transform:uppercase;"
+        "letter-spacing:0.12em;color:rgba(239,68,68,0.6);margin-bottom:0.75rem'>Danger Zone</div>",
         unsafe_allow_html=True,
     )
     st.markdown(
@@ -2018,6 +2067,9 @@ PAGES = {
 
 def main():
     if not logged_in():
+        if _try_restore_session():
+            st.rerun()
+            return
         page_auth()
         return
 
@@ -2031,15 +2083,15 @@ def main():
         st.markdown(
             "<div style='padding:4px 4px 20px'>"
             "<div style='display:flex;align-items:center;gap:8px'>"
-            "<span style='font-size:1.15rem'>⚗️</span>"
-            "<span style='font-size:1.1rem;font-weight:800;letter-spacing:-0.03em;color:#ffffff'>Stack</span>"
-            "<span style='font-size:1.1rem;font-weight:800;letter-spacing:-0.03em;color:#a78bfa'>Track</span>"
+            "<span style='font-size:1.2rem'>⚗️</span>"
+            "<span style='font-size:1.2rem;font-weight:700;letter-spacing:-0.02em;color:#ffffff'>Stack</span>"
+            "<span style='font-size:1.2rem;font-weight:700;letter-spacing:-0.02em;color:#a78bfa'>Track</span>"
             "</div>"
             "</div>",
             unsafe_allow_html=True,
         )
 
-        # User badge — prefer username from profiles, fall back to email-derived name
+        # User badge
         _uname = get_username()
         if _uname:
             display_name = f"@{_uname}"
