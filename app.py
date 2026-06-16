@@ -1,6 +1,7 @@
 """StackTrack — peptide protocol tracker."""
 
 import os
+import re
 import time
 import pandas as pd
 from datetime import date, timedelta, datetime
@@ -17,7 +18,7 @@ st.set_page_config(
     page_title="StackTrack",
     page_icon="⚗️",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 # ─── Design System ────────────────────────────────────────────────────────────
@@ -42,12 +43,21 @@ html, body, [class*="css"] {
 }
 
 /* ── Hide Streamlit chrome ────────────────────────────────────────────────── */
-[data-testid="stToolbar"],
 [data-testid="stDecoration"],
 [data-testid="stAppDeployButton"],
 [data-testid="InputInstructions"],
 footer, footer + div,
 #MainMenu { display: none !important; }
+
+/* Make toolbar invisible but keep it in the DOM so the sidebar
+   expand/collapse button (a child of stToolbar) stays functional */
+[data-testid="stToolbar"] {
+    background: transparent !important;
+    box-shadow: none !important;
+    border-bottom: none !important;
+}
+/* Hide toolbar action buttons (deploy, share, etc.) but not sidebar toggle */
+[data-testid="stToolbarActions"] { display: none !important; }
 
 /* ── Typography ───────────────────────────────────────────────────────────── */
 h1 {
@@ -157,6 +167,38 @@ h3 {
 [data-testid="stSidebar"] {
     background: #050505 !important;
     border-right: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+/* ── Sidebar collapse/expand toggle ──────────────────────────────────────── */
+/* Counteract any broad rule that could hide this wrapper */
+[data-testid="stSidebarCollapsedControl"] {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: 999 !important;
+}
+/* Purple-tinted toggle button to match app theme */
+[data-testid="collapsedControl"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    color: #A78BFA !important;
+    background: rgba(167,139,250,0.08) !important;
+    border: 1px solid rgba(167,139,250,0.2) !important;
+    border-radius: 8px !important;
+    transition: background 0.15s, border-color 0.15s !important;
+}
+[data-testid="collapsedControl"]:hover {
+    background: rgba(167,139,250,0.15) !important;
+    border-color: rgba(167,139,250,0.35) !important;
+}
+[data-testid="collapsedControl"] svg {
+    fill: #A78BFA !important;
+    color: #A78BFA !important;
 }
 
 /* ── Sidebar logout button ────────────────────────────────────────────────── */
@@ -318,8 +360,80 @@ h3 {
     font-size: 0.72rem !important;
 }
 
+/* ── Danger zone (delete account) button ─────────────────────────────────── */
+.danger-btn button {
+    color: rgba(255,107,107,0.5) !important;
+    border-color: transparent !important;
+    font-size: 0.78rem !important;
+    background: transparent !important;
+    min-height: 30px !important;
+}
+.danger-btn button:hover {
+    color: rgba(255,107,107,0.85) !important;
+    background: rgba(255,107,107,0.05) !important;
+}
+
+/* Sidebar danger expander header */
+[data-testid="stSidebar"] details summary p {
+    color: rgba(255,107,107,0.45) !important;
+    font-size: 0.75rem !important;
+}
+[data-testid="stSidebar"] details summary:hover p {
+    color: rgba(255,107,107,0.8) !important;
+}
+
 /* ── Divider ──────────────────────────────────────────────────────────────── */
 hr { border-color: rgba(255,255,255,0.05) !important; }
+
+/* ── Mobile ───────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    /* Sidebar: full-width overlay when open */
+    [data-testid="stSidebar"] {
+        width: 100vw !important;
+        min-width: 100vw !important;
+    }
+
+    /* Content edges */
+    .block-container { padding: 0 1rem !important; }
+
+    /* Tap targets */
+    .stButton > button,
+    [data-testid="stBaseButton-primary"] > button,
+    [data-testid="stBaseButton-secondary"] > button {
+        min-height: 44px !important;
+    }
+
+    /* Stack columns vertically */
+    .stHorizontalBlock { flex-direction: column !important; }
+    .stHorizontalBlock > [data-testid="column"] {
+        width: 100% !important;
+        min-width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+
+    /* Hero font sizes */
+    h1 { font-size: 1.5rem !important; }
+    p  { font-size: 0.85rem !important; }
+
+    /* Full-width pills and cards */
+    .streak-pill,
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Sidebar toggle — keep visible and tap-friendly on mobile */
+    [data-testid="stSidebarCollapsedControl"] {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: 999999 !important;
+    }
+    [data-testid="collapsedControl"] {
+        min-height: 44px !important;
+        min-width: 44px !important;
+    }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -359,8 +473,20 @@ def svc() -> Client | None:
 # ─── Session helpers ──────────────────────────────────────────────────────────
 
 def _clear_session():
-    for k in ("user", "access_token", "refresh_token"):
+    for k in ("user", "access_token", "refresh_token", "cached_username"):
         st.session_state.pop(k, None)
+
+
+def get_username() -> str | None:
+    """Fetch current user's username from profiles, cached in session state."""
+    if "cached_username" not in st.session_state:
+        try:
+            result = db().table("profiles").select("username").eq("id", uid()).execute()
+            data = result.data or []
+            st.session_state["cached_username"] = data[0].get("username") if data else None
+        except Exception:
+            st.session_state["cached_username"] = None
+    return st.session_state["cached_username"]
 
 
 def logged_in() -> bool:
@@ -478,6 +604,34 @@ def get_my_compound_averages() -> dict[str, dict[str, float]]:
         if avgs:
             averages[p["compound"].upper()] = avgs
     return averages
+
+
+def delete_log(log_id: str) -> None:
+    db().table("daily_logs").delete().eq("id", log_id).eq("user_id", uid()).execute()
+
+
+def update_log(log_id: str, data: dict) -> None:
+    db().table("daily_logs").update(data).eq("id", log_id).eq("user_id", uid()).execute()
+
+
+def update_protocol(protocol_id: str, data: dict) -> None:
+    db().table("protocols").update(data).eq("id", protocol_id).eq("user_id", uid()).execute()
+
+
+def delete_protocol(protocol_id: str) -> None:
+    db().table("daily_logs").delete().eq("protocol_id", protocol_id).eq("user_id", uid()).execute()
+    db().table("protocols").delete().eq("id", protocol_id).eq("user_id", uid()).execute()
+
+
+def delete_account() -> None:
+    """Delete all user data and auth account. Caller must clear session and rerun."""
+    user_id = uid()
+    db().table("daily_logs").delete().eq("user_id", user_id).execute()
+    db().table("protocols").delete().eq("user_id", user_id).execute()
+    db().table("profiles").delete().eq("id", user_id).execute()
+    service = svc()
+    if service:
+        service.auth.admin.delete_user(user_id)
 
 
 # ─── Chart constants ──────────────────────────────────────────────────────────
@@ -629,20 +783,38 @@ def page_auth():
                             st.error("Invalid email or password. Please try again.")
 
             with tab_up:
-                email = st.text_input("Email", key="su_email")
-                pw1   = st.text_input("Password (min 8 chars)", type="password", key="su_pw1")
-                pw2   = st.text_input("Confirm password", type="password", key="su_pw2")
+                email    = st.text_input("Email", key="su_email")
+                username = st.text_input("Username", key="su_username", placeholder="e.g. john_doe99")
+                pw1      = st.text_input("Password (min 8 chars)", type="password", key="su_pw1")
+                pw2      = st.text_input("Confirm password", type="password", key="su_pw2")
                 if st.button("Create account", key="su_btn", type="primary", use_container_width=True):
-                    if len(pw1) < 8:
+                    if not re.match(r'^[a-z0-9_]{3,30}$', username):
+                        st.error("Username must be 3–30 characters: lowercase letters, numbers, and underscores only.")
+                    elif len(pw1) < 8:
                         st.error("Password must be at least 8 characters.")
                     elif pw1 != pw2:
                         st.error("Passwords don't match.")
                     else:
-                        try:
-                            db().auth.sign_up({"email": email, "password": pw1})
-                            st.success("Account created — check your email to confirm, then log in.")
-                        except Exception as e:
-                            st.error(str(e))
+                        check_client = svc() or _base_client()
+                        taken = check_client.table("profiles").select("id").eq("username", username).execute()
+                        if taken.data:
+                            st.error("Username already taken.")
+                        else:
+                            try:
+                                res = db().auth.sign_up({"email": email, "password": pw1})
+                                # Set tokens before calling db() for the profile insert
+                                st.session_state["access_token"]  = res.session.access_token
+                                st.session_state["refresh_token"] = res.session.refresh_token
+                                profile_client = svc() or db()
+                                profile_client.table("profiles").insert({
+                                    "id":       res.user.id,
+                                    "username": username,
+                                }).execute()
+                                st.session_state["user"]            = {"id": res.user.id, "email": res.user.email}
+                                st.session_state["cached_username"] = username
+                                st.rerun()
+                            except Exception as e:
+                                st.error(str(e))
 
     # ── Footer ────────────────────────────────────────────────────────────────
     st.markdown(
@@ -659,40 +831,25 @@ def page_onboarding():
     _, col, _ = st.columns([1, 2, 1])
     with col:
         st.markdown(
-            "<div style='text-align:center;padding:2.5rem 0 2rem'>"
-            "<div style='font-size:3rem;margin-bottom:0.75rem'>⚗️</div>"
-            "<h1 style='color:#ffffff;font-size:1.75rem;margin:0 0 6px;letter-spacing:-0.03em'>"
+            "<div style='text-align:center;padding:3rem 0 1.5rem'>"
+            "<div style='font-size:2.8rem;margin-bottom:1rem'>⚗️</div>"
+            "<h1 style='color:#ffffff;font-size:1.75rem;margin:0 0 8px;letter-spacing:-0.03em'>"
             "Welcome to <span style='color:#00ff88'>StackTrack</span></h1>"
-            "<p style='color:rgba(255,255,255,0.4);font-size:0.9rem;line-height:1.8;margin-bottom:2rem'>"
-            "Track your peptide and biohacking protocols — dose, frequency, and how you feel "
-            "across energy, sleep, recovery, libido, and mood. Compare anonymously against others "
-            "running the same compound."
-            "</p></div>",
+            "</div>",
             unsafe_allow_html=True,
         )
-
-        c1, c2 = st.columns(2)
-        steps = [
-            ("1. Add a protocol", "Name the compound, set dose, frequency, and route of administration."),
-            ("2. Log daily",       "Rate energy, sleep, recovery, libido, and mood 1–10 each day."),
-            ("3. Track trends",    "Charts show how every metric evolves across your protocol."),
-            ("4. Compare",         "See anonymous community averages for anyone running the same compound."),
-        ]
-        for i, (title, body) in enumerate(steps):
-            with (c1 if i % 2 == 0 else c2):
-                st.markdown(
-                    f"<div class='onboard-step'>"
-                    f"<p style='font-weight:600;color:#ffffff;margin:0 0 4px;font-size:0.875rem'>{title}</p>"
-                    f"<p style='color:rgba(255,255,255,0.35);font-size:0.82rem;margin:0;line-height:1.6'>{body}</p>"
-                    f"</div><br>",
-                    unsafe_allow_html=True,
-                )
-
-        if st.button(
-            "Get started — add your first protocol →",
-            type="primary",
-            use_container_width=True,
-        ):
+        with st.container(border=True):
+            st.markdown(
+                "<p style='color:rgba(255,255,255,0.55);font-size:0.9rem;line-height:1.8;margin:0 0 1rem'>"
+                "You're all set. Here's how to get started:</p>"
+                "<p style='color:rgba(255,255,255,0.8);font-size:0.875rem;margin:0 0 6px'>"
+                "<strong style='color:#00ff88'>1.</strong> Add a protocol — name the compound, set your dose and frequency.</p>"
+                "<p style='color:rgba(255,255,255,0.8);font-size:0.875rem;margin:0'>"
+                "<strong style='color:#00ff88'>2.</strong> Log daily — rate energy, sleep, recovery, libido, and mood 1–10.</p>",
+                unsafe_allow_html=True,
+            )
+        st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+        if st.button("Add your first protocol →", type="primary", use_container_width=True):
             st.session_state["nav_page"] = "🧪 My Protocols"
             st.rerun()
 
@@ -747,7 +904,7 @@ def page_dashboard():
     all_protocols = get_protocols()
     all_logs      = get_logs()
 
-    if not all_protocols and not all_logs:
+    if not all_protocols:
         page_onboarding()
         return
 
@@ -1021,6 +1178,10 @@ def page_trends():
 
 # ─── My Protocols ─────────────────────────────────────────────────────────────
 
+_UNITS = ["mcg", "mg", "IU", "ml", "other"]
+_METRIC_ICON = {"energy": "⚡", "sleep": "😴", "recovery": "💪", "libido": "🔥", "mood": "🧠"}
+
+
 def page_my_protocols():
     st.markdown("## My Protocols")
 
@@ -1028,7 +1189,9 @@ def page_my_protocols():
     active = [p for p in all_protocols if p["is_active"]]
     past   = [p for p in all_protocols if not p["is_active"]]
 
-    tab_active, tab_trends, tab_add = st.tabs(["  Active  ", "  Trends  ", "  Add New  "])
+    tab_active, tab_trends, tab_logs, tab_add = st.tabs(
+        ["  Active  ", "  Trends  ", "  Logs  ", "  Add New  "]
+    )
 
     # ── Active protocols ──────────────────────────────────────────────────────
     with tab_active:
@@ -1036,38 +1199,124 @@ def page_my_protocols():
             st.info("No active protocols. Use **Add New** to start tracking a compound.")
         else:
             for p in active:
+                pid      = p["id"]
+                edit_key = f"editing_protocol_{pid}"
+                del_key  = f"confirm_delete_protocol_{pid}"
+
                 with st.container(border=True):
-                    lc, rc = st.columns([4, 1])
-                    with lc:
-                        st.markdown(f"**{p['compound']}**")
-                        parts = [
-                            f"{p['dose_amount']} {p['dose_unit']}",
-                            p["frequency"],
-                            p.get("timing") or "",
-                            p.get("route") or "",
-                        ]
-                        st.caption("  ·  ".join(x for x in parts if x))
-                        if p.get("source"):
-                            st.caption(f"Source: {p['source']}")
-                        if p.get("notes"):
-                            st.caption(f"📝 {p['notes']}")
-                    with rc:
-                        days_on = (
-                            date.today()
-                            - datetime.strptime(p["started_at"], "%Y-%m-%d").date()
-                        ).days
-                        st.caption(f"Day {days_on + 1}")
-                        st.caption(p["started_at"])
-                        _render_stop_reflect(p, button_key=f"mp_stop_{p['id']}")
+                    if st.session_state.get(edit_key):
+                        st.markdown("**Edit Protocol**")
+                        with st.form(f"edit_proto_{pid}"):
+                            new_compound = st.text_input("Compound", value=p["compound"])
+                            ec1, ec2 = st.columns(2)
+                            with ec1:
+                                new_dose = st.number_input(
+                                    "Dose", min_value=0.001,
+                                    value=float(p["dose_amount"]),
+                                    step=0.001, format="%.3f",
+                                )
+                            with ec2:
+                                new_unit = st.selectbox(
+                                    "Unit", _UNITS,
+                                    index=_UNITS.index(p["dose_unit"]) if p["dose_unit"] in _UNITS else 0,
+                                )
+                            new_notes = st.text_area("Notes", value=p.get("notes") or "")
+                            ps, pc = st.columns(2)
+                            with ps:
+                                saved = st.form_submit_button("Save", type="primary", use_container_width=True)
+                            with pc:
+                                cancelled = st.form_submit_button("Cancel", use_container_width=True)
+                        if saved:
+                            update_protocol(pid, {
+                                "compound":    new_compound.strip(),
+                                "dose_amount": new_dose,
+                                "dose_unit":   new_unit,
+                                "notes":       new_notes or None,
+                            })
+                            st.session_state.pop(edit_key, None)
+                            st.rerun()
+                        if cancelled:
+                            st.session_state.pop(edit_key, None)
+                            st.rerun()
+                    else:
+                        lc, rc = st.columns([3, 1])
+                        with lc:
+                            st.markdown(f"**{p['compound']}**")
+                            parts = [
+                                f"{p['dose_amount']} {p['dose_unit']}",
+                                p["frequency"],
+                                p.get("timing") or "",
+                                p.get("route") or "",
+                            ]
+                            st.caption("  ·  ".join(x for x in parts if x))
+                            if p.get("source"):
+                                st.caption(f"Source: {p['source']}")
+                            if p.get("notes"):
+                                st.caption(f"📝 {p['notes']}")
+                        with rc:
+                            days_on = (
+                                date.today()
+                                - datetime.strptime(p["started_at"], "%Y-%m-%d").date()
+                            ).days
+                            st.caption(f"Day {days_on + 1}")
+                            st.caption(p["started_at"])
+                            if st.button("Edit ✎", key=f"edit_proto_btn_{pid}", use_container_width=True):
+                                st.session_state[edit_key] = True
+                                st.rerun()
+                            _render_stop_reflect(p, button_key=f"mp_stop_{pid}")
+                            st.markdown('<div class="destructive-btn">', unsafe_allow_html=True)
+                            if st.button("Delete 🗑", key=f"del_proto_btn_{pid}", use_container_width=True):
+                                st.session_state[del_key] = True
+                            st.markdown('</div>', unsafe_allow_html=True)
+
+                    if st.session_state.get(del_key):
+                        st.markdown(
+                            "<p style='color:rgba(255,107,107,0.8);font-size:0.85rem;margin:10px 0 6px'>"
+                            "⚠️ This will also delete all logs for this protocol. Are you sure?</p>",
+                            unsafe_allow_html=True,
+                        )
+                        da, db_ = st.columns(2)
+                        with da:
+                            if st.button("Yes, delete", key=f"del_proto_confirm_{pid}", type="primary", use_container_width=True):
+                                delete_protocol(pid)
+                                st.session_state.pop(del_key, None)
+                                st.rerun()
+                        with db_:
+                            if st.button("Cancel", key=f"del_proto_cancel_{pid}", use_container_width=True):
+                                st.session_state.pop(del_key, None)
+                                st.rerun()
 
         if past:
             with st.expander(f"Past protocols ({len(past)})"):
                 for p in past:
-                    ended = p.get("ended_at") or "—"
-                    st.markdown(
-                        f"**{p['compound']}** · {p['dose_amount']} {p['dose_unit']} "
-                        f"· {p['started_at']} → {ended}"
-                    )
+                    pid     = p["id"]
+                    del_key = f"confirm_delete_protocol_{pid}"
+                    ended   = p.get("ended_at") or "—"
+                    cl, cr  = st.columns([4, 1])
+                    with cl:
+                        st.markdown(
+                            f"**{p['compound']}** · {p['dose_amount']} {p['dose_unit']} "
+                            f"· {p['started_at']} → {ended}"
+                        )
+                        if p.get("notes"):
+                            st.caption(p["notes"])
+                    with cr:
+                        st.markdown('<div class="destructive-btn">', unsafe_allow_html=True)
+                        if st.button("Delete", key=f"past_del_{pid}", use_container_width=True):
+                            st.session_state[del_key] = True
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    if st.session_state.get(del_key):
+                        st.warning("This will also delete all logs for this protocol.")
+                        pa, pb = st.columns(2)
+                        with pa:
+                            if st.button("Confirm delete", key=f"past_del_confirm_{pid}", type="primary", use_container_width=True):
+                                delete_protocol(pid)
+                                st.session_state.pop(del_key, None)
+                                st.rerun()
+                        with pb:
+                            if st.button("Cancel", key=f"past_del_cancel_{pid}", use_container_width=True):
+                                st.session_state.pop(del_key, None)
+                                st.rerun()
 
     # ── Trend charts ──────────────────────────────────────────────────────────
     with tab_trends:
@@ -1097,22 +1346,12 @@ def page_my_protocols():
                             y=df[metric],
                             mode="lines+markers",
                             line=dict(color=color, width=2.5, shape="spline", smoothing=0.8),
-                            marker=dict(
-                                size=6, color=color,
-                                line=dict(color="#0a0a0a", width=1.5),
-                            ),
+                            marker=dict(size=6, color=color, line=dict(color="#0a0a0a", width=1.5)),
                             fill="tozeroy",
                             fillcolor=f"rgba({r},{g},{b},0.07)",
                             hovertemplate=f"<b>{metric.capitalize()}</b>: %{{y}}<br>%{{x|%b %d}}<extra></extra>",
                         ))
-                        fig.update_layout(
-                            **_chart_layout(
-                                title=metric.capitalize(),
-                                height=250,
-                                showlegend=False,
-                                hovermode="x",
-                            )
-                        )
+                        fig.update_layout(**_chart_layout(title=metric.capitalize(), height=250, showlegend=False, hovermode="x"))
                         _apply_trend_xaxis(fig, df)
                         col.plotly_chart(fig, use_container_width=True)
 
@@ -1121,23 +1360,92 @@ def page_my_protocols():
                 for metric in METRICS:
                     color = METRIC_COLORS[metric]
                     fig_all.add_trace(go.Scatter(
-                        x=df["log_date"],
-                        y=df[metric],
-                        mode="lines+markers",
-                        name=metric.capitalize(),
+                        x=df["log_date"], y=df[metric],
+                        mode="lines+markers", name=metric.capitalize(),
                         line=dict(color=color, width=2, shape="spline", smoothing=0.8),
                         marker=dict(size=5, color=color),
                         hovertemplate=f"{metric.capitalize()}: %{{y}}<br>%{{x|%b %d}}<extra></extra>",
                     ))
-                fig_all.update_layout(
-                    **_chart_layout(
-                        height=400,
-                        hovermode="x unified",
-                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                    )
-                )
+                fig_all.update_layout(**_chart_layout(height=400, hovermode="x unified", legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)))
                 _apply_trend_xaxis(fig_all, df)
                 st.plotly_chart(fig_all, use_container_width=True)
+
+    # ── Logs ──────────────────────────────────────────────────────────────────
+    with tab_logs:
+        if not all_protocols:
+            st.info("No protocols yet.")
+        else:
+            compound_map = {p["compound"]: p["id"] for p in all_protocols}
+            sel_logs = st.selectbox("Protocol", list(compound_map.keys()), key="logs_tab_sel")
+            logs = get_logs(compound_map[sel_logs])
+
+            if not logs:
+                st.info("No logs for this protocol yet.")
+            else:
+                for log in logs:
+                    lid      = log["id"]
+                    edit_key = f"editing_log_{lid}"
+                    del_key  = f"confirm_delete_log_{lid}"
+
+                    with st.container(border=True):
+                        if st.session_state.get(edit_key):
+                            st.markdown(f"**Editing — {log['log_date']}**")
+                            with st.form(f"edit_log_{lid}"):
+                                ll1, ll2 = st.columns(2)
+                                with ll1:
+                                    e_energy   = st.slider("⚡ Energy",   1, 10, int(log.get("energy") or 5))
+                                    e_sleep    = st.slider("😴 Sleep",    1, 10, int(log.get("sleep") or 5))
+                                    e_recovery = st.slider("💪 Recovery", 1, 10, int(log.get("recovery") or 5))
+                                with ll2:
+                                    e_libido = st.slider("🔥 Libido", 1, 10, int(log.get("libido") or 5))
+                                    e_mood   = st.slider("🧠 Mood",   1, 10, int(log.get("mood") or 5))
+                                e_notes = st.text_area("Notes", value=log.get("notes") or "")
+                                ls, lc_ = st.columns(2)
+                                with ls:
+                                    log_saved = st.form_submit_button("Save", type="primary", use_container_width=True)
+                                with lc_:
+                                    log_cancelled = st.form_submit_button("Cancel", use_container_width=True)
+                            if log_saved:
+                                update_log(lid, {
+                                    "energy": e_energy, "sleep": e_sleep,
+                                    "recovery": e_recovery, "libido": e_libido,
+                                    "mood": e_mood, "notes": e_notes or None,
+                                })
+                                st.session_state.pop(edit_key, None)
+                                st.rerun()
+                            if log_cancelled:
+                                st.session_state.pop(edit_key, None)
+                                st.rerun()
+                        else:
+                            lc2, rc2 = st.columns([5, 1])
+                            with lc2:
+                                vals = "  ".join(
+                                    f"{_METRIC_ICON[m]} **{int(log[m])}**"
+                                    for m in METRICS if log.get(m) is not None
+                                )
+                                st.markdown(f"**{log['log_date']}** — {vals}")
+                                if log.get("notes"):
+                                    st.caption(log["notes"])
+                            with rc2:
+                                if st.button("Edit ✎", key=f"log_edit_{lid}", use_container_width=True):
+                                    st.session_state[edit_key] = True
+                                    st.rerun()
+                                st.markdown('<div class="destructive-btn">', unsafe_allow_html=True)
+                                if st.button("Delete", key=f"log_del_{lid}", use_container_width=True):
+                                    st.session_state[del_key] = True
+                                st.markdown('</div>', unsafe_allow_html=True)
+
+                        if st.session_state.get(del_key):
+                            ca2, cb2 = st.columns(2)
+                            with ca2:
+                                if st.button("Confirm delete", key=f"log_del_confirm_{lid}", type="primary", use_container_width=True):
+                                    delete_log(lid)
+                                    st.session_state.pop(del_key, None)
+                                    st.rerun()
+                            with cb2:
+                                if st.button("Cancel", key=f"log_del_cancel_{lid}", use_container_width=True):
+                                    st.session_state.pop(del_key, None)
+                                    st.rerun()
 
     # ── Add new protocol ──────────────────────────────────────────────────────
     with tab_add:
@@ -1146,7 +1454,7 @@ def page_my_protocols():
             with c1:
                 compound    = st.text_input("Compound *", placeholder="BPC-157, TB-500, GHK-Cu…")
                 dose_amount = st.number_input("Dose amount *", min_value=0.001, value=250.0, step=0.001, format="%.3f")
-                dose_unit   = st.selectbox("Unit", ["mcg", "mg", "IU", "ml", "other"])
+                dose_unit   = st.selectbox("Unit", _UNITS)
                 freq_sel    = st.selectbox("Frequency", ["daily", "EOD", "3x/week", "2x/week", "weekly", "custom"])
             with c2:
                 timing     = st.text_input("Timing", placeholder="morning fasted, pre-workout…")
@@ -1494,6 +1802,49 @@ def page_community_insights():
         )
 
 
+# ─── Privacy Policy ───────────────────────────────────────────────────────────
+
+def page_privacy_policy():
+    st.markdown("## Privacy Policy")
+    st.caption("Effective June 2025")
+    st.divider()
+
+    st.markdown("### What we collect")
+    st.markdown(
+        "- **Account data** — your email address and username, used only to identify your account\n"
+        "- **Protocol data** — compound name, dose, frequency, route, timing, source, and any notes you enter\n"
+        "- **Log data** — daily ratings (energy, sleep, recovery, libido, mood 1–10) and optional notes"
+    )
+
+    st.markdown("### How we use it")
+    st.markdown(
+        "- To power your personal dashboard, trend charts, and protocol history\n"
+        "- To generate **anonymous** community benchmarks — your individual entries are never attributed to you\n"
+        "- We do not use your data for advertising, model training, or any purpose outside the app"
+    )
+
+    st.markdown("### Data sharing")
+    st.markdown(
+        "- We never sell your data to third parties\n"
+        "- Community insights are fully anonymized. A compound only appears in community views once "
+        "**3 or more distinct users** have logged data for it — making individual identification statistically impossible\n"
+        "- Infrastructure is provided by Supabase (database and auth) and Streamlit Community Cloud (hosting). "
+        "Each has its own privacy policy governing their infrastructure"
+    )
+
+    st.markdown("### Your rights")
+    st.markdown(
+        "- **Delete your account** at any time from the sidebar — this permanently removes your account "
+        "and all associated protocols, logs, and profile data\n"
+        "- Deletion is immediate and irreversible. We do not retain backups of deleted accounts\n"
+        "- You may request a copy of your data by contacting us"
+    )
+
+    st.markdown("### Contact")
+    st.markdown("Questions or concerns: **privacy@stacktrack.app**")
+    st.caption("This is a placeholder address — update before public launch.")
+
+
 # ─── Navigation + main ────────────────────────────────────────────────────────
 
 PAGES = {
@@ -1501,6 +1852,7 @@ PAGES = {
     "📝 Log Today":          page_daily_log,
     "🧪 My Protocols":       page_my_protocols,
     "🌐 Community Insights": page_community_insights,
+    "⚖️ Privacy Policy":     page_privacy_policy,
 }
 
 
@@ -1528,9 +1880,13 @@ def main():
             unsafe_allow_html=True,
         )
 
-        # User badge
-        raw_email = st.session_state["user"].get("email", "")
-        display_name = raw_email.split("@")[0].replace(".", " ").replace("_", " ").title()
+        # User badge — prefer username from profiles, fall back to email-derived name
+        _uname = get_username()
+        if _uname:
+            display_name = f"@{_uname}"
+        else:
+            raw_email = st.session_state["user"].get("email", "")
+            display_name = raw_email.split("@")[0].replace(".", " ").replace("_", " ").title()
         st.sidebar.markdown(
             f"<span class='user-badge'>👤 {display_name}</span>",
             unsafe_allow_html=True,
@@ -1580,6 +1936,34 @@ def main():
                 pass
             _clear_session()
             st.rerun()
+
+        # ── Delete account ────────────────────────────────────────────────────
+        st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+        with st.expander("🗑 Delete account"):
+            st.markdown(
+                "<p style='font-size:0.8rem;color:rgba(255,255,255,0.45);margin-bottom:10px'>"
+                "Permanently deletes your account and <strong>all</strong> your data. "
+                "This cannot be undone.</p>",
+                unsafe_allow_html=True,
+            )
+            del_confirm = st.text_input(
+                "Type DELETE to confirm",
+                key="delete_account_confirm",
+                label_visibility="collapsed",
+                placeholder="Type DELETE to confirm",
+            )
+            if st.button(
+                "Delete my account",
+                key="delete_account_btn",
+                disabled=(del_confirm != "DELETE"),
+                use_container_width=True,
+            ):
+                try:
+                    delete_account()
+                except Exception as e:
+                    st.error(str(e))
+                _clear_session()
+                st.rerun()
 
     PAGES[page]()
 
