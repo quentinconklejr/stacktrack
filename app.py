@@ -18,7 +18,7 @@ st.set_page_config(
     page_title="StackTrack",
     page_icon="⚗️",
     layout="wide",
-    initial_sidebar_state="auto",
+    initial_sidebar_state="expanded",
 )
 
 # ─── Design System ────────────────────────────────────────────────────────────
@@ -84,8 +84,8 @@ h3 {
 
 /* ── Metric cards ─────────────────────────────────────────────────────────── */
 [data-testid="metric-container"] {
-    background: #111111 !important;
-    border: 1px solid rgba(255,255,255,0.06) !important;
+    background: rgba(167,139,250,0.06) !important;
+    border: 1px solid rgba(167,139,250,0.12) !important;
     border-radius: 16px !important;
     padding: 1.4rem 1.5rem !important;
     position: relative !important;
@@ -96,7 +96,7 @@ h3 {
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(0,255,136,0.5), transparent);
+    background: linear-gradient(90deg, transparent, rgba(167,139,250,0.4), transparent);
     pointer-events: none;
 }
 [data-testid="stMetricValue"] {
@@ -117,20 +117,20 @@ h3 {
 /* ── Primary button ───────────────────────────────────────────────────────── */
 [data-testid="stBaseButton-primary"] > button,
 .stButton > button[kind="primary"] {
-    background: #00ff88 !important;
-    color: #080808 !important;
+    background: linear-gradient(135deg, #7c3aed, #a78bfa) !important;
+    color: #ffffff !important;
     border: none !important;
     border-radius: 10px !important;
     font-weight: 700 !important;
     font-size: 0.875rem !important;
     letter-spacing: 0.005em !important;
     transition: all 0.15s ease !important;
-    box-shadow: 0 2px 12px rgba(0,255,136,0.2) !important;
+    box-shadow: 0 2px 12px rgba(124,58,237,0.3) !important;
 }
 [data-testid="stBaseButton-primary"] > button:hover,
 .stButton > button[kind="primary"]:hover {
-    background: #1aff96 !important;
-    box-shadow: 0 4px 24px rgba(0,255,136,0.4) !important;
+    background: linear-gradient(135deg, #6d28d9, #7c3aed) !important;
+    box-shadow: 0 4px 24px rgba(124,58,237,0.5) !important;
     transform: translateY(-1px) !important;
 }
 
@@ -240,19 +240,21 @@ h3 {
     margin: 0;
 }
 [data-testid="stSidebar"] .stRadio div[data-baseweb="radio"][aria-checked="true"] {
-    background: rgba(0,255,136,0.05);
-    border-color: rgba(0,255,136,0.12);
+    background: rgba(124,58,237,0.08);
+    border: 1px solid transparent !important;
+    border-left: 3px solid #7c3aed !important;
+    padding-left: 9px;
 }
 [data-testid="stSidebar"] .stRadio div[data-baseweb="radio"][aria-checked="true"]
     [data-testid="stMarkdownContainer"] p {
-    color: #00ff88 !important;
+    color: #a78bfa !important;
     font-weight: 600;
 }
 
 /* ── Streak pill ──────────────────────────────────────────────────────────── */
 .streak-pill {
-    background: rgba(0,255,136,0.03);
-    border: 1px solid rgba(0,255,136,0.1);
+    background: rgba(167,139,250,0.04);
+    border: 1px solid rgba(167,139,250,0.12);
     border-radius: 10px;
     padding: 10px 14px;
     margin: 8px 0 14px;
@@ -282,6 +284,7 @@ h3 {
     background: #111111 !important;
     border: 1px solid rgba(255,255,255,0.06) !important;
     border-radius: 14px !important;
+    padding: 1.25rem 1.5rem !important;
 }
 
 /* ── Onboarding cards ─────────────────────────────────────────────────────── */
@@ -307,8 +310,8 @@ h3 {
 .stTextInput > div > div > input:focus,
 [data-testid="stTextInput"] input:focus,
 [data-testid="stNumberInput"] input:focus {
-    border-color: #00ff88 !important;
-    box-shadow: 0 0 0 2px rgba(0,255,136,0.12) !important;
+    border-color: #7c3aed !important;
+    box-shadow: 0 0 0 2px rgba(124,58,237,0.18) !important;
 }
 [data-testid="stSelectbox"] > div > div {
     background: #0f0f0f !important;
@@ -332,26 +335,26 @@ h3 {
     transition: color 0.15s !important;
 }
 .stTabs [aria-selected="true"] {
-    color: #00ff88 !important;
-    border-bottom-color: #00ff88 !important;
+    color: #a78bfa !important;
+    border-bottom-color: #7c3aed !important;
 }
 .stTabs [data-baseweb="tab"]:hover { color: rgba(255,255,255,0.6) !important; }
 
 /* ── Alerts ───────────────────────────────────────────────────────────────── */
 [data-testid="stAlert"] {
-    background: rgba(0,0,0,0.3) !important;
-    border: 1px solid rgba(255,255,255,0.07) !important;
-    border-left: 2px solid #00ff88 !important;
+    background: rgba(167,139,250,0.08) !important;
+    border: 1px solid rgba(167,139,250,0.12) !important;
+    border-left: 3px solid #7c3aed !important;
     border-radius: 10px !important;
 }
 
 /* ── Slider ───────────────────────────────────────────────────────────────── */
 [data-testid="stSlider"] [data-baseweb="slider"] [data-testid="stThumbValue"] {
-    color: #00ff88;
+    color: #a78bfa;
 }
 [data-testid="stSlider"] [role="slider"] {
-    background: #00ff88 !important;
-    border-color: #00ff88 !important;
+    background: #7c3aed !important;
+    border-color: #7c3aed !important;
 }
 
 /* ── Caption ──────────────────────────────────────────────────────────────── */
@@ -373,13 +376,33 @@ h3 {
     background: rgba(255,107,107,0.05) !important;
 }
 
-/* Sidebar danger expander header */
-[data-testid="stSidebar"] details summary p {
-    color: rgba(255,107,107,0.45) !important;
-    font-size: 0.75rem !important;
+/* ── Danger zone section wrapper ─────────────────────────────────────────── */
+.danger-zone-wrapper {
+    border: 1px solid rgba(255,80,80,0.2);
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    margin-top: 0.5rem;
 }
-[data-testid="stSidebar"] details summary:hover p {
-    color: rgba(255,107,107,0.8) !important;
+
+/* ── Privacy policy footer link ───────────────────────────────────────────── */
+.privacy-link > button {
+    background: none !important;
+    border: none !important;
+    color: rgba(255,255,255,0.25) !important;
+    font-size: 0.7rem !important;
+    padding: 2px 8px !important;
+    box-shadow: none !important;
+    min-height: unset !important;
+    height: auto !important;
+    text-decoration: underline !important;
+    text-decoration-color: rgba(255,255,255,0.15) !important;
+    letter-spacing: 0.01em !important;
+}
+.privacy-link > button:hover {
+    color: rgba(255,255,255,0.5) !important;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 /* ── Divider ──────────────────────────────────────────────────────────────── */
@@ -828,27 +851,37 @@ def page_auth():
 # ─── Onboarding ───────────────────────────────────────────────────────────────
 
 def page_onboarding():
-    _, col, _ = st.columns([1, 2, 1])
-    with col:
-        st.markdown(
-            "<div style='text-align:center;padding:3rem 0 1.5rem'>"
-            "<div style='font-size:2.8rem;margin-bottom:1rem'>⚗️</div>"
-            "<h1 style='color:#ffffff;font-size:1.75rem;margin:0 0 8px;letter-spacing:-0.03em'>"
-            "Welcome to <span style='color:#00ff88'>StackTrack</span></h1>"
-            "</div>",
-            unsafe_allow_html=True,
-        )
-        with st.container(border=True):
+    st.markdown(
+        "<div style='max-width:680px;margin:3rem auto 0;text-align:center;padding:0 1rem'>"
+        "<div style='font-size:3.5rem;margin-bottom:1.25rem'>⚗️</div>"
+        "<div style='font-size:2rem;font-weight:800;letter-spacing:-0.03em;"
+        "color:#ffffff;margin:0 0 0.75rem;line-height:1.1'>Welcome to StackTrack</div>"
+        "<div style='color:rgba(255,255,255,0.5);font-size:1rem;margin:0 0 2.5rem;line-height:1.6'>"
+        "Track your protocols. See what works.</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    _, c1, c2, c3, _ = st.columns([0.25, 1, 1, 1, 0.25])
+    for col, icon, title, desc in [
+        (c1, "📈", "Log daily metrics",  "Rate energy, sleep, recovery, libido, and mood 1–10 each day."),
+        (c2, "🔬", "Track compounds",    "Add peptide protocols with dose, route, and timing."),
+        (c3, "👥", "Community insights", "See anonymized trends from the broader StackTrack community."),
+    ]:
+        with col:
             st.markdown(
-                "<p style='color:rgba(255,255,255,0.55);font-size:0.9rem;line-height:1.8;margin:0 0 1rem'>"
-                "You're all set. Here's how to get started:</p>"
-                "<p style='color:rgba(255,255,255,0.8);font-size:0.875rem;margin:0 0 6px'>"
-                "<strong style='color:#00ff88'>1.</strong> Add a protocol — name the compound, set your dose and frequency.</p>"
-                "<p style='color:rgba(255,255,255,0.8);font-size:0.875rem;margin:0'>"
-                "<strong style='color:#00ff88'>2.</strong> Log daily — rate energy, sleep, recovery, libido, and mood 1–10.</p>",
+                f"<div style='background:#161622;border:1px solid rgba(255,255,255,0.08);"
+                f"border-radius:12px;padding:20px;text-align:center;box-sizing:border-box'>"
+                f"<div style='font-size:1.5rem;margin-bottom:10px'>{icon}</div>"
+                f"<div style='font-weight:700;color:#ffffff;font-size:0.875rem;margin-bottom:6px'>{title}</div>"
+                f"<div style='color:rgba(255,255,255,0.4);font-size:0.78rem;line-height:1.5'>{desc}</div>"
+                f"</div>",
                 unsafe_allow_html=True,
             )
-        st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+
+    st.markdown("<div style='height:2rem'></div>", unsafe_allow_html=True)
+    _, btn_col, _ = st.columns([1, 1.2, 1])
+    with btn_col:
         if st.button("Add your first protocol →", type="primary", use_container_width=True):
             st.session_state["nav_page"] = "🧪 My Protocols"
             st.rerun()
@@ -900,6 +933,14 @@ def _render_stop_reflect(protocol: dict, button_key: str):
 
 # ─── Dashboard ────────────────────────────────────────────────────────────────
 
+def _dash_section(title: str):
+    st.markdown(
+        f"<div style='font-size:0.75rem;font-weight:600;text-transform:uppercase;"
+        f"letter-spacing:0.1em;color:rgba(255,255,255,0.35);margin:24px 0 12px'>{title}</div>",
+        unsafe_allow_html=True,
+    )
+
+
 def page_dashboard():
     all_protocols = get_protocols()
     all_logs      = get_logs()
@@ -911,21 +952,23 @@ def page_dashboard():
     protocols = [p for p in all_protocols if p["is_active"]]
     streak    = calculate_streak()
 
-    st.markdown("## Dashboard")
-
+    _dash_section("Overview")
     c1, c2, c3 = st.columns(3)
     c1.metric("Active Protocols", len(protocols))
     c2.metric("🔥 Streak", f"{streak} day{'s' if streak != 1 else ''}")
     c3.metric("Total Logs", len(all_logs))
 
-    st.divider()
-    st.markdown("### Active Protocols")
-
+    _dash_section("Active Protocols")
     if not protocols:
         st.info("No active protocols — head to **My Protocols** to start one.")
     else:
         for p in protocols:
-            with st.container(border=True):
+            st.markdown(
+                "<div style='border-left:3px solid #7c3aed;background:#0f0f17;"
+                "border-radius:0 12px 12px 0;margin-bottom:10px;padding:2px 0'>",
+                unsafe_allow_html=True,
+            )
+            with st.container():
                 lc, rc = st.columns([4, 1])
                 with lc:
                     st.markdown(f"**{p['compound']}**")
@@ -939,10 +982,10 @@ def page_dashboard():
                     days_on = (date.today() - datetime.strptime(p["started_at"], "%Y-%m-%d").date()).days
                     st.caption(f"Day {days_on + 1}")
                     _render_stop_reflect(p, button_key=f"dash_stop_{p['id']}")
+            st.markdown("</div>", unsafe_allow_html=True)
 
     if all_logs:
-        st.divider()
-        st.markdown("### Recent Logs")
+        _dash_section("Recent Logs")
         display_cols = ["log_date", "energy", "sleep", "recovery", "libido", "mood", "notes"]
         df_logs = pd.DataFrame(all_logs[:10])
         display_cols = [c for c in display_cols if c in df_logs.columns]
@@ -1046,13 +1089,13 @@ def page_daily_log():
             df_recent = pd.DataFrame(logs_for_protocol).head(7)
             if "energy" in df_recent.columns:
                 avg_energy = pd.to_numeric(df_recent["energy"], errors="coerce").mean()
-                avg_note = f" · Last 7 days avg energy: <span style='color:#00ff88;font-weight:600'>{avg_energy:.1f}/10</span>"
+                avg_note = f" · Last 7 days avg energy: <span style='color:#a78bfa;font-weight:600'>{avg_energy:.1f}/10</span>"
 
         log_word = "log" if logs_this_protocol == 1 else "logs"
         st.markdown(f"""
         <div style="
-            background: rgba(0,255,136,0.04);
-            border: 1px solid rgba(0,255,136,0.12);
+            background: rgba(167,139,250,0.06);
+            border: 1px solid rgba(167,139,250,0.14);
             border-radius: 10px;
             padding: 12px 16px;
             margin-bottom: 16px;
@@ -1768,10 +1811,10 @@ def page_community_insights():
             name="You",
             x=metric_labels,
             y=my_avgs,
-            marker_color="#00ff88",
+            marker_color="#7c3aed",
             text=[f"{v:.1f}" for v in my_avgs],
             textposition="outside",
-            textfont=dict(color="#00ff88"),
+            textfont=dict(color="#a78bfa"),
             hovertemplate="%{x}: %{y:.1f}<extra>You</extra>",
         ))
     fig.update_layout(
@@ -1845,6 +1888,123 @@ def page_privacy_policy():
     st.caption("This is a placeholder address — update before public launch.")
 
 
+# ─── Settings ─────────────────────────────────────────────────────────────────
+
+def _settings_section(title: str):
+    st.markdown(
+        f"<div style='font-size:0.75rem;font-weight:600;text-transform:uppercase;"
+        f"letter-spacing:0.1em;color:rgba(255,255,255,0.35);margin:0 0 12px'>{title}</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def page_settings():
+    st.markdown("## Settings")
+
+    # ── Account ───────────────────────────────────────────────────────────────
+    _settings_section("Account")
+    with st.container(border=True):
+        raw_email = st.session_state["user"].get("email", "")
+        st.text_input("Email", value=raw_email, disabled=True)
+        _uname = get_username()
+        with st.form("change_username_form"):
+            new_username = st.text_input(
+                "Username",
+                value=_uname or "",
+                placeholder="e.g. john_doe99",
+            )
+            if st.form_submit_button("Update username", type="primary"):
+                if not re.match(r'^[a-z0-9_]{3,30}$', new_username):
+                    st.error("Username must be 3–30 characters: lowercase letters, numbers, and underscores only.")
+                elif new_username == _uname:
+                    st.info("That's already your username.")
+                else:
+                    check_client = svc() or _base_client()
+                    taken = check_client.table("profiles").select("id").eq("username", new_username).execute()
+                    if taken.data and taken.data[0].get("id") != uid():
+                        st.error("Username already taken.")
+                    else:
+                        try:
+                            db().table("profiles").update({"username": new_username}).eq("id", uid()).execute()
+                            st.session_state["cached_username"] = new_username
+                            st.success("Username updated.")
+                        except Exception as e:
+                            st.error(str(e))
+
+    st.markdown("<div style='height:1.5rem'></div>", unsafe_allow_html=True)
+
+    # ── Appearance ────────────────────────────────────────────────────────────
+    _settings_section("Appearance")
+    with st.container(border=True):
+        st.markdown(
+            "<div style='display:flex;align-items:center;justify-content:space-between;padding:4px 0'>"
+            "<span style='color:rgba(255,255,255,0.7);font-size:0.875rem'>Dark mode</span>"
+            "<span style='font-size:0.72rem;color:rgba(255,255,255,0.3);"
+            "background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);"
+            "border-radius:20px;padding:2px 10px'>Default</span>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        st.caption("Additional theme options coming soon.")
+
+    st.markdown("<div style='height:1.5rem'></div>", unsafe_allow_html=True)
+
+    # ── Session ───────────────────────────────────────────────────────────────
+    _settings_section("Session")
+    with st.container(border=True):
+        if st.button("Logout", use_container_width=True):
+            try:
+                db().auth.sign_out()
+            except Exception:
+                pass
+            _clear_session()
+            st.rerun()
+
+    st.markdown("<div style='height:1.5rem'></div>", unsafe_allow_html=True)
+
+    # ── Danger zone ───────────────────────────────────────────────────────────
+    st.markdown('<div class="danger-zone-wrapper">', unsafe_allow_html=True)
+    st.markdown(
+        "<div style='font-size:0.75rem;font-weight:600;text-transform:uppercase;"
+        "letter-spacing:0.1em;color:rgba(255,107,107,0.6);margin-bottom:0.75rem'>Danger Zone</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<p style='color:rgba(255,255,255,0.45);font-size:0.875rem;margin:0 0 1rem'>"
+        "Permanently deletes your account and <strong>all</strong> your data. "
+        "This cannot be undone.</p>",
+        unsafe_allow_html=True,
+    )
+    del_confirm = st.text_input(
+        "Type DELETE to confirm",
+        key="delete_account_confirm",
+        label_visibility="collapsed",
+        placeholder="Type DELETE to confirm",
+    )
+    st.markdown('<div class="danger-btn">', unsafe_allow_html=True)
+    if st.button(
+        "Delete my account",
+        key="delete_account_btn",
+        disabled=(del_confirm != "DELETE"),
+        use_container_width=True,
+    ):
+        try:
+            delete_account()
+        except Exception as e:
+            st.error(str(e))
+        _clear_session()
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+# ─── Privacy dialog ───────────────────────────────────────────────────────────
+
+@st.dialog("Privacy Policy", width="large")
+def _show_privacy_dialog():
+    page_privacy_policy()
+
+
 # ─── Navigation + main ────────────────────────────────────────────────────────
 
 PAGES = {
@@ -1852,7 +2012,7 @@ PAGES = {
     "📝 Log Today":          page_daily_log,
     "🧪 My Protocols":       page_my_protocols,
     "🌐 Community Insights": page_community_insights,
-    "⚖️ Privacy Policy":     page_privacy_policy,
+    "⚙️ Settings":           page_settings,
 }
 
 
@@ -1873,9 +2033,8 @@ def main():
             "<div style='display:flex;align-items:center;gap:8px'>"
             "<span style='font-size:1.15rem'>⚗️</span>"
             "<span style='font-size:1.1rem;font-weight:800;letter-spacing:-0.03em;color:#ffffff'>Stack</span>"
-            "<span style='font-size:1.1rem;font-weight:800;letter-spacing:-0.03em;color:#00ff88'>Track</span>"
+            "<span style='font-size:1.1rem;font-weight:800;letter-spacing:-0.03em;color:#a78bfa'>Track</span>"
             "</div>"
-            "<div style='width:20px;height:2px;background:#00ff88;margin-top:5px;border-radius:2px'></div>"
             "</div>",
             unsafe_allow_html=True,
         )
@@ -1899,7 +2058,7 @@ def main():
             st.markdown(
                 f"<div class='streak-pill'>"
                 f"<span style='font-size:1.1rem'>{flames}</span>&nbsp;"
-                f"<span style='color:#00ff88;font-weight:700;font-size:1.05rem'>{streak}</span>"
+                f"<span style='color:#a78bfa;font-weight:700;font-size:1.05rem'>{streak}</span>"
                 f"<span style='font-size:0.8rem'> day streak</span>"
                 f"</div>",
                 unsafe_allow_html=True,
@@ -1928,42 +2087,12 @@ def main():
         )
         st.session_state["nav_page"] = page
 
-        st.divider()
-        if st.button("Logout", use_container_width=True):
-            try:
-                db().auth.sign_out()
-            except Exception:
-                pass
-            _clear_session()
-            st.rerun()
-
-        # ── Delete account ────────────────────────────────────────────────────
-        st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
-        with st.expander("🗑 Delete account"):
-            st.markdown(
-                "<p style='font-size:0.8rem;color:rgba(255,255,255,0.45);margin-bottom:10px'>"
-                "Permanently deletes your account and <strong>all</strong> your data. "
-                "This cannot be undone.</p>",
-                unsafe_allow_html=True,
-            )
-            del_confirm = st.text_input(
-                "Type DELETE to confirm",
-                key="delete_account_confirm",
-                label_visibility="collapsed",
-                placeholder="Type DELETE to confirm",
-            )
-            if st.button(
-                "Delete my account",
-                key="delete_account_btn",
-                disabled=(del_confirm != "DELETE"),
-                use_container_width=True,
-            ):
-                try:
-                    delete_account()
-                except Exception as e:
-                    st.error(str(e))
-                _clear_session()
-                st.rerun()
+        # Privacy policy — tiny muted footer link
+        st.markdown("<div style='height:2rem'></div>", unsafe_allow_html=True)
+        st.markdown('<div class="privacy-link" style="text-align:center">', unsafe_allow_html=True)
+        if st.button("Privacy Policy", key="sidebar_privacy_btn"):
+            _show_privacy_dialog()
+        st.markdown('</div>', unsafe_allow_html=True)
 
     PAGES[page]()
 
