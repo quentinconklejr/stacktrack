@@ -415,8 +415,22 @@ hr { border-color: rgba(255,255,255,0.04) !important; }
     overflow: hidden !important;
 }
 
+/* ── Mobile banner (hidden on desktop) ───────────────────────────────────── */
+.mobile-banner { display: none; }
+
 /* ── Mobile ───────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+    .mobile-banner {
+        display: block !important;
+        background: rgba(139,92,246,0.08);
+        border: 1px solid rgba(139,92,246,0.15);
+        border-radius: 10px;
+        font-size: 0.78rem;
+        color: rgba(255,255,255,0.5);
+        padding: 8px 16px;
+        text-align: center;
+        margin-bottom: 12px;
+    }
     [data-testid="stSidebar"] {
         width: 100vw !important;
         min-width: 100vw !important;
@@ -425,10 +439,14 @@ hr { border-color: rgba(255,255,255,0.04) !important; }
     .stButton > button,
     [data-testid="stBaseButton-primary"] > button,
     [data-testid="stBaseButton-secondary"] > button {
-        min-height: 48px !important;
+        min-height: 44px !important;
     }
-    .stHorizontalBlock { flex-direction: column !important; }
-    .stHorizontalBlock > [data-testid="column"] {
+    .stHorizontalBlock,
+    [data-testid="stHorizontalBlock"] {
+        flex-direction: column !important;
+    }
+    .stHorizontalBlock > [data-testid="column"],
+    [data-testid="stHorizontalBlock"] > [data-testid="column"] {
         width: 100% !important;
         min-width: 100% !important;
         flex: 1 1 100% !important;
@@ -2054,6 +2072,401 @@ def _show_privacy_dialog():
     page_privacy_policy()
 
 
+# ─── Compound Library ─────────────────────────────────────────────────────────
+
+_CATEGORY_COLORS = {
+    "Repair":     ("#10b981", "rgba(16,185,129,0.12)", "rgba(16,185,129,0.25)"),
+    "Growth":     ("#f59e0b", "rgba(245,158,11,0.12)",  "rgba(245,158,11,0.25)"),
+    "Cognitive":  ("#8b5cf6", "rgba(139,92,246,0.12)",  "rgba(139,92,246,0.25)"),
+    "Metabolic":  ("#3b82f6", "rgba(59,130,246,0.12)",  "rgba(59,130,246,0.25)"),
+}
+
+COMPOUNDS: list[dict] = [
+    {
+        "name": "BPC-157",
+        "category": "Repair",
+        "dose_range": "200–500 mcg/day",
+        "protocol_length": "4–12 weeks",
+        "description": (
+            "Body Protection Compound 157 is a synthetic peptide derived from a gastric protein. "
+            "It accelerates healing of tendons, ligaments, muscles, and gut tissue by promoting "
+            "angiogenesis and upregulating growth factor receptors. Commonly used for joint injuries, "
+            "gut permeability issues, and post-surgery recovery."
+        ),
+    },
+    {
+        "name": "TB-500",
+        "category": "Repair",
+        "dose_range": "2–5 mg twice weekly",
+        "protocol_length": "4–8 weeks",
+        "description": (
+            "Thymosin Beta-4 is a naturally occurring peptide that regulates actin and supports "
+            "cell migration, proliferation, and differentiation. It is widely used for systemic "
+            "tissue repair, reducing inflammation, and improving flexibility and range of motion "
+            "after injury."
+        ),
+    },
+    {
+        "name": "CJC-1295",
+        "category": "Growth",
+        "dose_range": "1–2 mg/week (with DAC); 100–300 mcg/dose (without DAC)",
+        "protocol_length": "8–16 weeks",
+        "description": (
+            "A long-acting GHRH analogue that stimulates pulsatile growth hormone release from the "
+            "pituitary. The DAC (Drug Affinity Complex) version extends its half-life to about one "
+            "week. Typically stacked with Ipamorelin to amplify GH pulses for muscle growth, fat "
+            "loss, and improved sleep quality."
+        ),
+    },
+    {
+        "name": "Ipamorelin",
+        "category": "Growth",
+        "dose_range": "100–300 mcg per dose, 1–3×/day",
+        "protocol_length": "8–16 weeks",
+        "description": (
+            "A selective growth hormone secretagogue and ghrelin mimetic with minimal effect on "
+            "cortisol or prolactin. It produces clean, pulsatile GH release making it one of the "
+            "most popular peptides for body composition, anti-aging, and recovery. Frequently "
+            "combined with CJC-1295."
+        ),
+    },
+    {
+        "name": "Semaglutide",
+        "category": "Metabolic",
+        "dose_range": "0.25–2.4 mg/week (titrated)",
+        "protocol_length": "12–52 weeks",
+        "description": (
+            "A GLP-1 receptor agonist originally developed for type 2 diabetes that has become a "
+            "leading weight-loss intervention. It slows gastric emptying, reduces appetite centrally, "
+            "and improves insulin sensitivity. Clinical trials show 10–15% average body weight "
+            "reduction over 68 weeks."
+        ),
+    },
+    {
+        "name": "GHK-Cu",
+        "category": "Repair",
+        "dose_range": "1–2 mg/day (subcutaneous) or topical",
+        "protocol_length": "4–8 weeks",
+        "description": (
+            "Glycine-histidine-lysine copper tripeptide is a naturally occurring copper-binding "
+            "peptide that declines with age. It stimulates collagen synthesis, wound healing, "
+            "antioxidant activity, and has been studied for skin rejuvenation, hair growth, "
+            "and neuroprotection."
+        ),
+    },
+    {
+        "name": "Selank",
+        "category": "Cognitive",
+        "dose_range": "250–500 mcg/dose, 1–3×/day (intranasal)",
+        "protocol_length": "2–4 weeks",
+        "description": (
+            "A synthetic heptapeptide analogue of tuftsin developed in Russia that modulates the "
+            "GABAergic and serotonergic systems. It is used for anxiolysis, cognitive enhancement, "
+            "and mood stabilization without sedation or dependence risk. Also shows immune-modulating "
+            "properties."
+        ),
+    },
+    {
+        "name": "Semax",
+        "category": "Cognitive",
+        "dose_range": "200–600 mcg/day (intranasal)",
+        "protocol_length": "2–4 weeks",
+        "description": (
+            "An ACTH(4-10) analogue that increases BDNF and promotes neuroplasticity. Used for "
+            "cognitive enhancement, focus, and neuroprotection. Russian clinical studies show benefit "
+            "in stroke recovery, attention-deficit conditions, and general cognitive performance under "
+            "stress."
+        ),
+    },
+    {
+        "name": "PT-141 (Bremelanotide)",
+        "category": "Metabolic",
+        "dose_range": "0.5–2 mg per use",
+        "protocol_length": "As needed",
+        "description": (
+            "A melanocortin receptor agonist that acts centrally on the hypothalamus to increase "
+            "sexual desire and arousal in both men and women. Unlike PDE5 inhibitors it does not "
+            "require direct physical stimulation and is FDA-approved for hypoactive sexual desire "
+            "disorder in premenopausal women."
+        ),
+    },
+    {
+        "name": "MK-677 (Ibutamoren)",
+        "category": "Growth",
+        "dose_range": "10–25 mg/day (oral)",
+        "protocol_length": "12–24 weeks",
+        "description": (
+            "A non-peptide growth hormone secretagogue and ghrelin mimetic taken orally, making it "
+            "convenient for long-term use. It elevates GH and IGF-1 levels, improving sleep quality "
+            "and deep sleep architecture, muscle mass, bone density, and recovery. Appetite "
+            "stimulation is a common side effect."
+        ),
+    },
+    {
+        "name": "Tesamorelin",
+        "category": "Metabolic",
+        "dose_range": "1–2 mg/day",
+        "protocol_length": "12–26 weeks",
+        "description": (
+            "A stabilised GHRH analogue FDA-approved for HIV-associated lipodystrophy. It selectively "
+            "reduces visceral adipose tissue by stimulating endogenous GH release while preserving the "
+            "natural feedback loop. Research also supports cognitive benefit in older adults."
+        ),
+    },
+    {
+        "name": "Hexarelin",
+        "category": "Growth",
+        "dose_range": "100–200 mcg/dose, 2–3×/day",
+        "protocol_length": "6–12 weeks",
+        "description": (
+            "One of the most potent GHRP peptides available, stimulating strong GH pulses while also "
+            "providing cardioprotective effects. It is used for maximizing GH output, improving body "
+            "composition, and muscle strength, though it can raise cortisol and prolactin at higher "
+            "doses."
+        ),
+    },
+    {
+        "name": "DSIP",
+        "category": "Cognitive",
+        "dose_range": "100–600 mcg before bed",
+        "protocol_length": "1–4 weeks",
+        "description": (
+            "Delta Sleep-Inducing Peptide is an endogenous neuropeptide that promotes slow-wave "
+            "sleep. Used to improve sleep onset latency and sleep quality, reduce stress hormone "
+            "levels overnight, and support hormonal reset during deep sleep cycles."
+        ),
+    },
+    {
+        "name": "Tirzepatide",
+        "category": "Metabolic",
+        "dose_range": "2.5–15 mg/week (titrated)",
+        "protocol_length": "16–72 weeks",
+        "description": (
+            "A dual GIP and GLP-1 receptor agonist (twincretin) that achieves greater weight loss "
+            "than semaglutide in head-to-head trials, with average reductions of 15–20% body weight. "
+            "It also improves glycemic control, lipid profiles, and markers of metabolic syndrome."
+        ),
+    },
+    {
+        "name": "Thymosin Alpha-1",
+        "category": "Repair",
+        "dose_range": "1–1.6 mg, 2–3×/week",
+        "protocol_length": "4–12 weeks",
+        "description": (
+            "An immunomodulatory peptide that enhances T-cell maturation and NK-cell activity. "
+            "Used to support immune function during illness, infection recovery, or high-stress "
+            "training blocks. Also studied for its role in reducing chronic inflammation and "
+            "supporting gut microbiome health."
+        ),
+    },
+    {
+        "name": "AOD-9604",
+        "category": "Metabolic",
+        "dose_range": "250–500 mcg/day",
+        "protocol_length": "8–12 weeks",
+        "description": (
+            "A modified fragment of HGH (176-191) that mimics fat-burning properties of growth "
+            "hormone without the anabolic or anti-insulin effects. It stimulates lipolysis and "
+            "inhibits lipogenesis, making it suitable for targeted fat loss, particularly around "
+            "the abdomen."
+        ),
+    },
+    {
+        "name": "Epitalon",
+        "category": "Cognitive",
+        "dose_range": "5–10 mg/day",
+        "protocol_length": "10–20 days (1–2 cycles/year)",
+        "description": (
+            "A tetrapeptide derived from the pineal gland that activates telomerase, potentially "
+            "slowing cellular aging by elongating telomeres. It also regulates circadian rhythms by "
+            "normalizing melatonin secretion and has shown antioxidant and anti-tumor properties in "
+            "animal studies."
+        ),
+    },
+    {
+        "name": "GHRP-6",
+        "category": "Growth",
+        "dose_range": "100–300 mcg/dose, 2–3×/day",
+        "protocol_length": "6–12 weeks",
+        "description": (
+            "Growth Hormone Releasing Peptide 6 is a ghrelin mimetic that produces strong GH pulses "
+            "and significantly stimulates appetite, making it useful for lean bulk phases. It also "
+            "has healing properties similar to BPC-157 and supports gastric motility and gut health."
+        ),
+    },
+    {
+        "name": "NAD+ (Nicotinamide Adenine Dinucleotide)",
+        "category": "Metabolic",
+        "dose_range": "250–1000 mg/day (oral); 500–1000 mg/infusion",
+        "protocol_length": "Ongoing or 4-week loading",
+        "description": (
+            "A critical coenzyme in cellular energy metabolism that declines with age. "
+            "Supplementation supports mitochondrial function, DNA repair via sirtuins, and "
+            "cognitive clarity. IV infusions are used for rapid repletion; oral NMN/NR precursors "
+            "are common maintenance forms."
+        ),
+    },
+    {
+        "name": "Noopept",
+        "category": "Cognitive",
+        "dose_range": "10–30 mg/day",
+        "protocol_length": "4–8 weeks (cycles)",
+        "description": (
+            "A synthetic dipeptide nootropic structurally related to racetams that is far more "
+            "potent by weight. It increases BDNF and NGF expression, improves memory consolidation, "
+            "recall speed, and mental focus. Best cycled to prevent tolerance and maintain efficacy."
+        ),
+    },
+    {
+        "name": "Cerebrolysin",
+        "category": "Cognitive",
+        "dose_range": "2–10 mL/day (IM or IV)",
+        "protocol_length": "5–10 days per cycle",
+        "description": (
+            "A neuropeptide complex derived from porcine brain tissue that mimics endogenous "
+            "neurotrophic factors. It supports neuronal survival, synaptic plasticity, and cognitive "
+            "function. Used clinically in Eastern Europe for stroke, Alzheimer's, and traumatic brain "
+            "injury recovery."
+        ),
+    },
+    {
+        "name": "5-Amino-1MQ",
+        "category": "Metabolic",
+        "dose_range": "50–100 mg/day (oral)",
+        "protocol_length": "4–8 weeks",
+        "description": (
+            "A small-molecule NNMT (nicotinamide N-methyltransferase) inhibitor that increases NAD+ "
+            "availability in cells and activates fat cell metabolism. It promotes lipolysis in "
+            "adipose tissue and may enhance metabolic rate, making it a novel adjunct to fat loss "
+            "protocols."
+        ),
+    },
+    {
+        "name": "KPV",
+        "category": "Repair",
+        "dose_range": "200–500 mcg/day",
+        "protocol_length": "4–8 weeks",
+        "description": (
+            "A tripeptide fragment of alpha-MSH with potent anti-inflammatory properties. Particularly "
+            "effective for gut inflammation, IBD, and Crohn's disease when taken orally. Also used "
+            "topically for skin conditions including eczema and psoriasis. It works by inhibiting "
+            "pro-inflammatory NF-kB pathways."
+        ),
+    },
+    {
+        "name": "LL-37",
+        "category": "Repair",
+        "dose_range": "100–500 mcg/day",
+        "protocol_length": "2–6 weeks",
+        "description": (
+            "The only known human cathelicidin antimicrobial peptide, it plays a key role in innate "
+            "immunity and wound healing. It exhibits broad-spectrum antimicrobial activity, modulates "
+            "the immune response, and stimulates angiogenesis and epithelial cell migration to "
+            "accelerate tissue repair."
+        ),
+    },
+    {
+        "name": "Dihexa",
+        "category": "Cognitive",
+        "dose_range": "0.5–10 mg/day (oral or transdermal)",
+        "protocol_length": "4–8 weeks (cycles)",
+        "description": (
+            "An HGF/Met system activator that is reportedly 7 orders of magnitude more potent than "
+            "BDNF at improving cognitive function. It enhances synaptic connectivity and long-term "
+            "potentiation. Primarily used for memory, executive function, and neurodegeneration "
+            "prevention."
+        ),
+    },
+]
+
+
+def page_compound_library():
+    st.markdown("# Compound Library")
+    st.markdown(
+        "<p style='color:rgba(255,255,255,0.4);font-size:0.88rem;margin-top:-8px;margin-bottom:24px'>"
+        "Reference guide for common peptides and nootropics — dosing, protocols, and use cases."
+        "</p>",
+        unsafe_allow_html=True,
+    )
+
+    search = st.text_input(
+        "Search compounds…",
+        placeholder="e.g. BPC-157, repair, cognitive",
+        label_visibility="collapsed",
+    )
+
+    query = search.strip().lower()
+    filtered = [
+        c for c in COMPOUNDS
+        if not query
+        or query in c["name"].lower()
+        or query in c["category"].lower()
+        or query in c["description"].lower()
+        or query in c["dose_range"].lower()
+    ]
+
+    cat_order = ["Repair", "Growth", "Cognitive", "Metabolic"]
+    by_cat: dict[str, list[dict]] = {cat: [] for cat in cat_order}
+    for c in filtered:
+        by_cat[c["category"]].append(c)
+
+    if not filtered:
+        st.info("No compounds match your search.")
+        return
+
+    for cat in cat_order:
+        compounds = by_cat[cat]
+        if not compounds:
+            continue
+
+        fg, bg, border = _CATEGORY_COLORS[cat]
+        st.markdown(
+            f"<div style='display:flex;align-items:center;gap:10px;margin:32px 0 14px'>"
+            f"<span style='background:{bg};border:1px solid {border};color:{fg};"
+            f"border-radius:6px;padding:3px 10px;font-size:0.7rem;font-weight:700;"
+            f"text-transform:uppercase;letter-spacing:0.1em'>{cat}</span>"
+            f"<div style='flex:1;height:1px;background:rgba(255,255,255,0.05)'></div>"
+            f"<span style='font-size:0.72rem;color:rgba(255,255,255,0.25)'>"
+            f"{len(compounds)} compound{'s' if len(compounds) != 1 else ''}</span>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+
+        for compound in compounds:
+            fg2, bg2, border2 = _CATEGORY_COLORS[compound["category"]]
+            st.markdown(
+                f"<div style='background:#111113;border:1px solid rgba(255,255,255,0.06);"
+                f"border-radius:14px;padding:20px 24px;margin-bottom:10px'>"
+                f"<div style='display:flex;align-items:flex-start;justify-content:space-between;"
+                f"flex-wrap:wrap;gap:8px;margin-bottom:12px'>"
+                f"<span style='font-size:1.05rem;font-weight:700;color:#ffffff'>"
+                f"{compound['name']}</span>"
+                f"<span style='background:{bg2};border:1px solid {border2};color:{fg2};"
+                f"border-radius:6px;padding:2px 9px;font-size:0.68rem;font-weight:700;"
+                f"text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap'>"
+                f"{compound['category']}</span>"
+                f"</div>"
+                f"<div style='display:flex;flex-wrap:wrap;gap:20px;margin-bottom:12px'>"
+                f"<div>"
+                f"<div style='font-size:0.65rem;font-weight:600;text-transform:uppercase;"
+                f"letter-spacing:0.1em;color:rgba(255,255,255,0.28);margin-bottom:3px'>Dose Range</div>"
+                f"<div style='font-size:0.85rem;color:rgba(255,255,255,0.75);font-weight:500'>"
+                f"{compound['dose_range']}</div>"
+                f"</div>"
+                f"<div>"
+                f"<div style='font-size:0.65rem;font-weight:600;text-transform:uppercase;"
+                f"letter-spacing:0.1em;color:rgba(255,255,255,0.28);margin-bottom:3px'>Protocol Length</div>"
+                f"<div style='font-size:0.85rem;color:rgba(255,255,255,0.75);font-weight:500'>"
+                f"{compound['protocol_length']}</div>"
+                f"</div>"
+                f"</div>"
+                f"<div style='font-size:0.87rem;color:rgba(255,255,255,0.55);line-height:1.65'>"
+                f"{compound['description']}</div>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+
+
 # ─── Navigation + main ────────────────────────────────────────────────────────
 
 PAGES = {
@@ -2061,6 +2474,7 @@ PAGES = {
     "📝 Log Today":          page_daily_log,
     "🧪 My Protocols":       page_my_protocols,
     "🌐 Community Insights": page_community_insights,
+    "📚 Compound Library":   page_compound_library,
     "⚙️ Settings":           page_settings,
 }
 
@@ -2146,6 +2560,12 @@ def main():
             _show_privacy_dialog()
         st.markdown('</div>', unsafe_allow_html=True)
 
+    st.markdown(
+        "<div class='mobile-banner'>"
+        "StackTrack works best on desktop. Mobile support is improving."
+        "</div>",
+        unsafe_allow_html=True,
+    )
     PAGES[page]()
 
 
