@@ -546,7 +546,7 @@ def get_username() -> str | None:
     """Fetch current user's username from profiles, cached in session state."""
     if "cached_username" not in st.session_state:
         try:
-            result = db().table("profiles").select("username").eq("id", uid()).execute()
+            result = db().table("profiles").select("username").eq("user_id", uid()).execute()
             data = result.data or []
             st.session_state["cached_username"] = data[0].get("username") if data else None
         except Exception:
@@ -693,7 +693,7 @@ def delete_account() -> None:
     user_id = uid()
     db().table("daily_logs").delete().eq("user_id", user_id).execute()
     db().table("protocols").delete().eq("user_id", user_id).execute()
-    db().table("profiles").delete().eq("id", user_id).execute()
+    db().table("profiles").delete().eq("user_id", user_id).execute()
     service = svc()
     if service:
         service.auth.admin.delete_user(user_id)
@@ -880,7 +880,7 @@ def page_auth():
                                 st.session_state["access_token"]  = res.session.access_token
                                 st.session_state["refresh_token"] = res.session.refresh_token
                                 service.table("profiles").insert({
-                                    "id":       res.user.id,
+                                    "user_id":  res.user.id,
                                     "username": username,
                                 }).execute()
                                 st.session_state["user"]            = {"id": res.user.id, "email": res.user.email}
@@ -1989,12 +1989,12 @@ def page_settings():
                     st.info("That's already your username.")
                 else:
                     check_client = svc() or _base_client()
-                    taken = check_client.table("profiles").select("id").eq("username", new_username).execute()
-                    if taken.data and taken.data[0].get("id") != uid():
+                    taken = check_client.table("profiles").select("user_id").eq("username", new_username).execute()
+                    if taken.data and taken.data[0].get("user_id") != uid():
                         st.error("Username already taken.")
                     else:
                         try:
-                            db().table("profiles").update({"username": new_username}).eq("id", uid()).execute()
+                            db().table("profiles").update({"username": new_username}).eq("user_id", uid()).execute()
                             st.session_state["cached_username"] = new_username
                             st.success("Username updated.")
                         except Exception as e:
