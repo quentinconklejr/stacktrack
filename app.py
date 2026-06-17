@@ -867,17 +867,19 @@ def page_auth():
                     elif pw1 != pw2:
                         st.error("Passwords don't match.")
                     else:
-                        check_client = svc() or _base_client()
-                        taken = check_client.table("profiles").select("id").eq("username", username).execute()
-                        if taken.data:
-                            st.error("Username already taken.")
-                        else:
-                            try:
+                        try:
+                            service = svc()
+                            if service is None:
+                                st.error("Server configuration error — please contact support.")
+                                st.stop()
+                            taken = service.table("profiles").select("id").eq("username", username).execute()
+                            if taken.data:
+                                st.error("Username already taken.")
+                            else:
                                 res = db().auth.sign_up({"email": email, "password": pw1})
                                 st.session_state["access_token"]  = res.session.access_token
                                 st.session_state["refresh_token"] = res.session.refresh_token
-                                profile_client = svc() or db()
-                                profile_client.table("profiles").insert({
+                                service.table("profiles").insert({
                                     "id":       res.user.id,
                                     "username": username,
                                 }).execute()
@@ -885,8 +887,8 @@ def page_auth():
                                 st.session_state["cached_username"] = username
                                 _store_session(res.session.refresh_token)
                                 st.rerun()
-                            except Exception as e:
-                                st.error(str(e))
+                        except Exception:
+                            st.error("Something went wrong, please try again.")
 
     # ── Footer ────────────────────────────────────────────────────────────────
     st.markdown(
